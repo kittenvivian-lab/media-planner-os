@@ -6,6 +6,9 @@
     <title>團隊進度看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
     <style>
         body {
             font-family: 'Noto Sans TC', sans-serif;
@@ -85,11 +88,11 @@
             <div class="flex flex-col sm:flex-row sm:items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-sm">
                 <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0">👤 成員篩選：</span>
                 <div class="flex flex-wrap gap-1.5" id="owner-filter-pills">
-                    </div>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="campaign-grid">
-                </div>
+            </div>
         </div>
 
         <div id="view-campaign-detail" class="global-view hidden space-y-6">
@@ -138,7 +141,7 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="detail-stages-grid">
-                </div>
+            </div>
         </div>
 
         <div id="view-adminboard" class="global-view hidden space-y-6">
@@ -225,7 +228,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="notices-grid">
-                </div>
+            </div>
         </div>
 
         <div class="mt-8 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-3">
@@ -350,7 +353,7 @@
             <h4 class="font-bold text-slate-900 text-sm mb-2" id="toast-title">提示訊息</h4>
             <p class="text-sm text-slate-500 leading-relaxed mb-4" id="toast-message">這裡顯示說明內容。</p>
             <div class="flex gap-2 justify-center" id="toast-controls">
-                </div>
+            </div>
         </div>
     </div>
 
@@ -360,6 +363,20 @@
     </footer>
 
     <script>
+        // Firebase 專屬金鑰
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkkNE2y1bjLcJ94fWEAVUwcWLJ6bkBgM8",
+            authDomain: "media-planner-os.firebaseapp.com",
+            projectId: "media-planner-os",
+            storageBucket: "media-planner-os.firebasestorage.app",
+            messagingSenderId: "745129351261",
+            appId: "1:745129351261:web:aee454480e82845e0d15b4"
+        };
+
+        // 初始化連線
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         // 核心 SOP 標準執行階段範本
         const defaultStagesBlueprint = [
             { id: 'p1', name: '發稿與準備', phase: 'placement', owner: '未指定', offsetStart: -45, offsetEnd: -30, items: [
@@ -791,7 +808,6 @@
             }
         }
 
-        // 修改：勾選完成狀態連動進度狀態
         function toggleItemCompletion(campId, stageId, itemId) {
             const camp = state.campaigns.find(c => c.id === campId);
             if (camp && camp.stages) {
@@ -808,7 +824,6 @@
             }
         }
 
-        // 新增：手動切換狀態下拉選單
         function changeItemStatus(campId, stageId, itemId, newStatus) {
             const camp = state.campaigns.find(c => c.id === campId);
             if (camp && camp.stages) {
@@ -825,9 +840,8 @@
             }
         }
 
-        // 新增：原地直接編輯細項文字
         function startInlineEdit(stageId, itemId, element) {
-            if (element.querySelector('input')) return; // 防止重複建立
+            if (element.querySelector('input')) return;
             
             const active = getActiveCampaign();
             if (!active) return;
@@ -857,7 +871,6 @@
             input.addEventListener('blur', saveEdit);
         }
 
-        // 新增：原地直接編輯截止日期
         function startInlineDateEdit(stageId, itemId, element) {
             if (element.querySelector('input')) return;
             
@@ -1298,27 +1311,31 @@
             changeGlobalView('dashboard');
         }
 
+        // 修改後：串接 Cloud Firestore 資料庫，整包 state 即時覆蓋寫入雲端
         function saveStateToStorage() {
             localStorage.setItem('mediaPlannerMultiStateV8_3', JSON.stringify(state));
+            
+            db.collection('global').doc('planner_config').set(state)
+            .catch((error) => {
+                console.error("雲端儲存失敗: ", error);
+            });
         }
 
+        // 修改後：向 Firestore 訂閱即時狀態監聽，全台同仁電腦同步連動
         function loadStateFromStorage() {
-            const stored = localStorage.getItem('mediaPlannerMultiStateV8_3');
-            if (stored) {
-                try {
-                    const parsed = JSON.parse(stored);
-                    if (parsed.campaigns && parsed.adminTasks) {
-                        state = parsed;
+            db.collection('global').doc('planner_config').onSnapshot((doc) => {
+                if (doc.exists) {
+                    const val = doc.data();
+                    if (val && val.campaigns && val.adminTasks) {
+                        state = val;
+                        renderUI();
                     }
-                    if (!state.notices) {
-                        state.notices = [];
-                    }
-                } catch (e) {
-                    console.error("Error loading state", e);
+                } else {
+                    resetAll();
                 }
-            } else {
-                resetAll();
-            }
+            }, (error) => {
+                console.error("雲端連線失敗: ", error);
+            });
         }
 
         function renderOwnerFilterPills() {
@@ -1437,7 +1454,7 @@
                     progressBarsHtml += `
                         <div>
                             <div class="flex justify-between items-center text-sm text-slate-600 mb-1">
-                                <span class="font-bold flex items-center gap-1">✍️ 內容與網紅產出</span>
+                                <span class="font-bold flex items-center gap-1">✍️ 內容與網網紅產出</span>
                                 <span class="font-bold text-purple-600">${cChecked}/${cTotal} 完成 (${cPercentage}%)</span>
                             </div>
                             <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -1509,7 +1526,6 @@
             });
         }
 
-        // 修改：精細化渲染工作細項卡片（支援原地編輯、狀態切換、預計時間）
         function renderCampaignDetails(active) {
             if (!active) return;
 
@@ -1595,7 +1611,6 @@
                         if (!item.status) item.status = item.completed ? "已完成" : "未開始";
                         if (!item.dueDate) item.dueDate = "";
 
-                        // 計算進度選單與對應顏色
                         let statusSelectHtml = `
                             <select onchange="changeItemStatus('${active.id}', '${stage.id}', '${item.id}', this.value)" class="text-xs font-bold border rounded px-1 py-0.5 focus:outline-none bg-white cursor-pointer shrink-0
                                 ${item.status === '未開始' ? 'text-slate-500 border-slate-300' : ''}
