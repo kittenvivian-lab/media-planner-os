@@ -6,7 +6,6 @@
     <title>團隊進度看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
@@ -114,7 +113,7 @@
                                 🚀 上線日：未設定
                             </span>
                         </div>
-                        <p class="text-sm text-slate-500 mt-1">自訂此專案獨有的執行階段、指派負責人，並隨時修改或刪除不適用的標準細項。</p>
+                        <p class="text-sm text-slate-500 mt-1">自訂此專案獨有的執行階段、指派負責人，並隨時修改 or 刪除不適用的標準細項。</p>
                     </div>
                 </div>
                 
@@ -150,11 +149,9 @@
 
         <div id="view-adminboard" class="global-view hidden space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-sm">
-                <span class="font-bold text-slate-700 flex items-center gap-1 shrink-0">🔍 輸入負責人名字篩選行政任務：</span>
-                <div class="relative flex-grow max-w-xs">
-                    <input type="text" id="admin-owner-search-input" oninput="handleAdminSearchInput(this.value)" placeholder="輸入名字 (例如: vivian 或 空白看全部)" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50 font-semibold text-slate-700">
-                    <button onclick="clearAdminSearch()" id="admin-search-clear-btn" class="hidden absolute right-3 top-2 text-slate-400 hover:text-slate-600 font-bold">&times;</button>
-                </div>
+                <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0">👤 行政負責人過濾：</span>
+                <div class="flex flex-wrap gap-1.5" id="admin-owner-filter-pills">
+                    </div>
             </div>
 
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -355,6 +352,15 @@
         </div>
     </div>
 
+    <div id="toast-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-sm text-center">
+            <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl mx-auto mb-3" id="toast-icon">⚠️</div>
+            <h4 class="font-bold text-slate-900 text-sm mb-2" id="toast-title">提示訊息</h4>
+            <p class="text-sm text-slate-500 leading-relaxed mb-4" id="toast-message">這裡顯示說明內容。</p>
+            <div class="flex gap-2 justify-center" id="toast-controls"></div>
+        </div>
+    </div>
+
     <script>
         // Firebase 專屬金鑰
         const firebaseConfig = {
@@ -437,7 +443,7 @@
 
         let currentOwnerFilter = 'all';
         let currentBrandFilter = 'all'; 
-        let currentAdminKeyFilter = ''; 
+        let currentAdminOwnerFilter = 'all'; // 改回：行政點選篩選的控制變數
 
         let currentModalMode = 'add';
         let currentStageModalMode = 'add';
@@ -492,6 +498,19 @@
                     });
                 }
             });
+            return Array.from(owners);
+        }
+
+        // 動態獲取包含日常行政和專案在內的所有同仁名字列表
+        function getAllAdminOwners() {
+            const owners = new Set();
+            state.adminTasks.forEach(task => {
+                if (task.owner && task.owner !== '未指定' && task.owner.trim() !== '') {
+                    owners.add(task.owner.trim());
+                }
+            });
+            // 把專案同仁也納入名單，方便日常行政直接篩選
+            getAllOwners().forEach(o => owners.add(o));
             return Array.from(owners);
         }
 
@@ -993,7 +1012,7 @@
             );
         }
 
-        function toggleDateEdit(stageId, event) {
+        style="color: #475569;"DateEdit(stageId, event) {
             if (event) event.stopPropagation();
             const panel = document.getElementById(`date-edit-panel-${stageId}`);
             if (!panel) return;
@@ -1282,7 +1301,7 @@
             
             currentOwnerFilter = 'all';
             currentBrandFilter = 'all';
-            currentAdminKeyFilter = '';
+            currentAdminOwnerFilter = 'all';
             saveStateToStorage();
             changeGlobalView('dashboard');
         }
@@ -1369,23 +1388,34 @@
             });
         }
 
-        function handleAdminSearchInput(value) {
-            currentAdminKeyFilter = value.trim().toLowerCase();
-            const clearBtn = document.getElementById('admin-search-clear-btn');
-            if (currentAdminKeyFilter !== "") {
-                clearBtn.classList.remove('hidden');
-            } else {
-                clearBtn.classList.add('hidden');
-            }
-            renderKanban(); 
-        }
+        // 升級：動態渲染日常行政的「負責人篩選按鈕列」
+        function renderAdminOwnerFilterPills() {
+            const container = document.getElementById('admin-owner-filter-pills');
+            if (!container) return;
+            const adminOwners = getAllAdminOwners();
+            container.innerHTML = '';
 
-        function clearAdminSearch() {
-            const input = document.getElementById('admin-owner-search-input');
-            input.value = "";
-            currentAdminKeyFilter = "";
-            document.getElementById('admin-search-clear-btn').classList.add('hidden');
-            renderKanban();
+            const allBtn = document.createElement('button');
+            allBtn.className = `px-3 py-1.5 rounded-lg font-bold transition-all select-none ${currentAdminOwnerFilter === 'all' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
+            allBtn.textContent = '全部任務';
+            allBtn.onclick = (e) => {
+                e.stopPropagation();
+                currentAdminOwnerFilter = 'all';
+                renderKanban();
+            };
+            container.appendChild(allBtn);
+
+            adminOwners.forEach(owner => {
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded-lg font-bold transition-all select-none ${currentAdminOwnerFilter === owner ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
+                btn.textContent = owner;
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    currentAdminOwnerFilter = owner;
+                    renderKanban();
+                };
+                container.appendChild(btn);
+            });
         }
 
         function renderUI() {
@@ -1724,7 +1754,10 @@
             });
         }
 
+        // 修改：日常行政任務看板（改回點擊按鈕進行篩選）
         function renderKanban() {
+            renderAdminOwnerFilterPills();
+
             const columns = {
                 todo: document.getElementById('kanban-todo'),
                 progress: document.getElementById('kanban-progress'),
@@ -1738,9 +1771,10 @@
             let counts = { todo: 0, progress: 0, done: 0 };
 
             state.adminTasks.forEach(task => {
-                if (currentAdminKeyFilter !== '') {
-                    const taskOwner = (task.owner || '未指定').toLowerCase();
-                    if (!taskOwner.includes(currentAdminKeyFilter)) { return; }
+                // 改回按鈕篩選的比對邏輯
+                if (currentAdminOwnerFilter !== 'all') {
+                    const taskOwner = task.owner || '未指定';
+                    if (taskOwner !== currentAdminOwnerFilter) return;
                 }
 
                 const status = task.status || 'todo';
