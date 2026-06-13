@@ -6,6 +6,7 @@
     <title>團隊進度看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
@@ -154,7 +155,6 @@
                     <input type="text" id="admin-owner-search-input" oninput="handleAdminSearchInput(this.value)" placeholder="輸入名字 (例如: vivian 或 空白看全部)" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50 font-semibold text-slate-700">
                     <button onclick="clearAdminSearch()" id="admin-search-clear-btn" class="hidden absolute right-3 top-2 text-slate-400 hover:text-slate-600 font-bold">&times;</button>
                 </div>
-                <span class="text-xs text-slate-400 italic sm:ml-2">※ 支援即時動態過濾，清除文字可顯示全部。</span>
             </div>
 
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -355,20 +355,6 @@
         </div>
     </div>
 
-    <div id="toast-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-sm text-center">
-            <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl mx-auto mb-3" id="toast-icon">⚠️</div>
-            <h4 class="font-bold text-slate-900 text-sm mb-2" id="toast-title">提示訊息</h4>
-            <p class="text-sm text-slate-500 leading-relaxed mb-4" id="toast-message">這裡顯示說明內容。</p>
-            <div class="flex gap-2 justify-center" id="toast-controls"></div>
-        </div>
-    </div>
-
-    <footer class="bg-slate-100 border-t border-slate-200 mt-12 py-6 text-center text-[11px] text-slate-400">
-        <p>© 2026 Media Planner Onboarding System v8.3.</p>
-        <p class="mt-1 text-slate-300">祝你天天準時下班！🚀</p>
-    </footer>
-
     <script>
         // Firebase 專屬金鑰
         const firebaseConfig = {
@@ -449,16 +435,15 @@
             notices: []
         };
 
-        // 篩選器的控制變數
         let currentOwnerFilter = 'all';
         let currentBrandFilter = 'all'; 
-        let currentAdminKeyFilter = ''; // 修改：行政篩選改為關鍵字文字儲存
+        let currentAdminKeyFilter = ''; 
 
-        currentModalMode = 'add';
-        currentStageModalMode = 'add';
-        activeStageIdInModal = '';
-        currentNoticeModalMode = 'add';
-        activeNoticeIdInModal = '';
+        let currentModalMode = 'add';
+        let currentStageModalMode = 'add';
+        let activeStageIdInModal = '';
+        let currentNoticeModalMode = 'add';
+        let activeNoticeIdInModal = '';
 
         let activeSubTab = 'placement';
         let currentGlobalView = 'dashboard';
@@ -526,7 +511,7 @@
             return Array.from(brands);
         }
 
-        style="color: #475569;"TimelineText(stage, launchDate) {
+        function getStageTimelineText(stage, launchDate) {
             if (stage.customStart && stage.customEnd) {
                 return `📅 自訂：${formatDateStringWithDay(stage.customStart)} ~ ${formatDateStringWithDay(stage.customEnd)}`;
             }
@@ -1131,7 +1116,6 @@
             }
         }
 
-        // 修改：日常行政任務新增負責人，現在負責人直接手動填文字，徹底防呆
         function addAdminTask() {
             const input = document.getElementById('admin-task-input');
             const categorySelect = document.getElementById('admin-task-category');
@@ -1385,21 +1369,17 @@
             });
         }
 
-        // 新增：處理日常行政「輸入人名關鍵字」的即時監聽函式
         function handleAdminSearchInput(value) {
             currentAdminKeyFilter = value.trim().toLowerCase();
-            
-            // 控制清除按鈕的顯示/隱藏
             const clearBtn = document.getElementById('admin-search-clear-btn');
             if (currentAdminKeyFilter !== "") {
                 clearBtn.classList.remove('hidden');
             } else {
                 clearBtn.classList.add('hidden');
             }
-            renderKanban(); // 局部即時重繪看板
+            renderKanban(); 
         }
 
-        // 新增：清除日常行政人名篩選關鍵字
         function clearAdminSearch() {
             const input = document.getElementById('admin-owner-search-input');
             input.value = "";
@@ -1744,7 +1724,6 @@
             });
         }
 
-        // 修改：行政看板過濾（從原來的 Pills 按鈕改為「比對輸入框的關鍵字文字」）
         function renderKanban() {
             const columns = {
                 todo: document.getElementById('kanban-todo'),
@@ -1759,12 +1738,9 @@
             let counts = { todo: 0, progress: 0, done: 0 };
 
             state.adminTasks.forEach(task => {
-                // 修改的核心過濾邏輯：如果輸入框有字，就去比對任務負責人（不分大小寫、支援模糊搜尋）
                 if (currentAdminKeyFilter !== '') {
                     const taskOwner = (task.owner || '未指定').toLowerCase();
-                    if (!taskOwner.includes(currentAdminKeyFilter)) {
-                        return; // 如果負責人名字沒包含輸入的關鍵字，直接跳過不秀出來
-                    }
+                    if (!taskOwner.includes(currentAdminKeyFilter)) { return; }
                 }
 
                 const status = task.status || 'todo';
@@ -1808,10 +1784,7 @@
                         </div>
                     </div>
                 `;
-
-                if (columns[status]) {
-                    columns[status].appendChild(card);
-                }
+                if (columns[status]) { columns[status].appendChild(card); }
             });
 
             document.getElementById('count-todo').textContent = counts.todo;
