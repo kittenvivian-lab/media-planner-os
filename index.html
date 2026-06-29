@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
+    <!-- 核心雲端連線工具：Firebase & Firestore SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
@@ -33,14 +34,15 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
 
+    <!-- 頂部全局儀表板 -->
     <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 text-white shadow-lg border-b border-indigo-500/20">
         <div class="max-w-7xl mx-auto px-4 py-6 md:py-8 w-full">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <span class="bg-indigo-500/20 text-indigo-300 text-sm font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-400/30">Planner OS v8.3 (Multi-Filter)</span>
+                    <span class="bg-indigo-500/20 text-indigo-300 text-sm font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-400/30">Planner OS v8.5 (Calendar Integrated)</span>
                     <h1 class="text-2xl md:text-3xl font-extrabold mt-2 tracking-tight">團隊進度看板</h1>
                     <p class="text-slate-300 mt-1 text-sm">
-                        記得時常更新專案進度唷！
+                        記得時常更新專案進度唷🚀
                     </p>
                 </div>
                 <div class="flex gap-4">
@@ -49,19 +51,23 @@
                         <div class="text-xl font-black text-indigo-300" id="global-campaign-count">0</div>
                     </div>
                     <div class="bg-white/5 backdrop-blur-md rounded-xl px-4 py-2.5 border border-white/10 text-center min-w-[120px]">
-                        <span class="text-[12px] text-slate-300 block uppercase font-bold">待處理行政</span>
-                        <div class="text-xl font-black text-rose-400" id="global-pending-tasks">0</div>
+                        <span class="text-[12px] text-slate-300 block uppercase font-bold">逾期未完成</span>
+                        <div class="text-xl font-black text-rose-400 animate-pulse" id="global-overdue-tasks">0</div>
                     </div>
                 </div>
             </div>
         </div>
     </header>
 
+    <!-- 全局導覽列 -->
     <section class="bg-white border-b border-slate-200 py-1 shadow-sm sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex gap-2 overflow-x-auto py-2">
                 <button onclick="changeGlobalView('dashboard')" id="nav-dashboard" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-indigo-700 bg-indigo-50">
                     🏠 專案總覽看板
+                </button>
+                <button onclick="changeGlobalView('calendarview')" id="nav-calendarview" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100">
+                    📅 行事曆瀏覽
                 </button>
                 <button onclick="changeGlobalView('adminboard')" id="nav-adminboard" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100">
                     📋 日常行政
@@ -73,19 +79,22 @@
         </div>
     </section>
 
+    <!-- 主容器 -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
 
+        <!-- 視圖 1: 專案總覽看板 (首頁) -->
         <div id="view-dashboard" class="global-view block space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <div>
-                    <h2 class="text-lg font-bold text-slate-900">進行中的專案</h2>
-                    <p class="text-sm text-slate-500 mt-0.5">點擊專案即可管理自訂階段與細項工作。所有的時程建議皆已過濾週末假日。</p>
+                    <h2 class="text-lg font-bold text-slate-900">進行中的行銷專案 Campaign</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">點擊卡片進入自訂任務面板，紅底標示代表該專案內有尚未完成的逾期工作項目。</p>
                 </div>
                 <button onclick="openCampaignModal('add')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 self-start sm:self-auto">
-                    <span>➕ 新增專案</span>
+                    <span>➕ 新增行銷專案</span>
                 </button>
             </div>
 
+            <!-- 專案人員 + 品牌雙重篩選 -->
             <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-sm space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                     <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">👤 成員篩選：</span>
@@ -100,30 +109,55 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="campaign-grid"></div>
         </div>
 
+        <!-- 新增視圖: 團隊月行事曆單元 -->
+        <div id="view-calendarview" class="global-view hidden space-y-6">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">📅 工作排期行事曆</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">匯集所有專案工作與行政任務的預計完成日。點擊同仁按鈕可快速過濾交期事項。</p>
+                </div>
+                <!-- 人員快選功能 -->
+                <div class="flex flex-wrap gap-1 items-center bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs">
+                    <span class="font-bold text-slate-500 px-1">👤 人員快選:</span>
+                    <div class="flex flex-wrap gap-1" id="calendar-owner-pills"></div>
+                </div>
+            </div>
+
+            <!-- 月份切換與日曆主體 -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <button onclick="moveCalendarMonth(-1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold transition-all">◀ 上個月</button>
+                    <h3 id="calendar-month-year-title" class="text-base font-black text-slate-800 tracking-wide">2026 年 06 月</h3>
+                    <button onclick="moveCalendarMonth(1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold transition-all">下個月 ▶</button>
+                </div>
+
+                <div class="grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200" id="calendar-grid-body">
+                    <!-- JS 動態渲染日曆格子 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 視圖 2: 專案詳情頁 (全新改版：不區分投放/Content，全開放自由建構) -->
         <div id="view-campaign-detail" class="global-view hidden space-y-6">
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-start gap-3.5">
-                    <button onclick="changeGlobalView('dashboard')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2.5 rounded-xl transition-all font-bold text-sm shrink-0 flex items-center gap-1" title="返回總覽">
+                    <button onclick="changeGlobalView('dashboard')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2.5 rounded-xl transition-all font-bold text-sm shrink-0 flex items-center gap-1">
                         ⬅️ 返回
                     </button>
                     <div>
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded">專案控制台</span>
-                            <h2 class="text-lg md:text-xl font-extrabold text-slate-900" id="detail-campaign-title">載入中專案...</h2>
-                            <span id="detail-campaign-launch-badge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                                🚀 上線日：未設定
-                            </span>
+                            <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded">專案工作面板</span>
+                            <h2 class="text-lg md:text-xl font-extrabold text-slate-900" id="detail-campaign-title">載入中...</h2>
                         </div>
-                        <p class="text-sm text-slate-500 mt-1">自訂此專案獨有的執行階段、指派負責人，並隨時修改或刪除不適用的標準細項。</p>
+                        <p class="text-sm text-slate-500 mt-1">此處完全由使用者自由定義工作小組與流程，直接點擊「工作標題」與「預計完成日」即可原地直接編輯更新。</p>
                     </div>
                 </div>
-                
-                <div class="flex items-center gap-2 flex-wrap self-start md:self-auto shrink-0">
-                    <button onclick="openStageModal('add')" class="text-sm font-bold px-3 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition-all border border-indigo-200/50">
-                        ➕ 新增工作階段
+                <div class="flex items-center gap-2 flex-wrap shrink-0">
+                    <button onclick="openStageModal('add')" class="text-sm font-bold px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-all shadow-sm">
+                        ➕ 新增工作小組/群組
                     </button>
                     <button onclick="triggerRenameActive()" class="text-sm font-bold px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg transition-all">
-                        ✏️ 編輯專案
+                        ✏️ 編輯名稱
                     </button>
                     <button onclick="triggerDeleteActive()" class="text-sm font-bold px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg transition-all">
                         🗑️ 刪除專案
@@ -131,66 +165,59 @@
                 </div>
             </div>
 
-            <div id="campaign-detail-tab-bar" class="flex border-b border-slate-200 bg-white p-1.5 rounded-xl shadow-sm gap-2">
-                <button onclick="switchDetailTab('placement')" id="tab-placement" class="detail-tab flex-1 py-3 px-3 rounded-lg font-bold text-sm md:text-sm text-center transition-all duration-200 bg-indigo-50 text-indigo-700">
-                    🎯 媒體投放
-                </button>
-                <button onclick="switchDetailTab('production')" id="tab-production" class="detail-tab flex-1 py-3 px-3 rounded-lg font-bold text-sm md:text-sm text-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all duration-200">
-                    ✍️ 內容產出
-                </button>
-            </div>
-
-            <div class="bg-indigo-50/50 rounded-xl px-4 py-3 border border-indigo-100 flex justify-between items-center text-sm" id="detail-progress-bar-container">
-                <span class="font-bold text-indigo-800" id="detail-tab-banner-text">🎯 請留意時程掌控，最好預留給自己與客戶1-2個緩衝工作天</span>
-                <span class="font-bold text-indigo-600 bg-white px-2.5 py-1 rounded-full shadow-sm" id="detail-tab-progress-text">0/0 細項完成</span>
-            </div>
-
+            <!-- 自由任務群組網格 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="detail-stages-grid"></div>
         </div>
 
+        <!-- 視圖 3: 日常行政看板 (優化：加強客戶分類與預預計日) -->
         <div id="view-adminboard" class="global-view hidden space-y-6">
+            <!-- 日常行政同仁點選過濾 -->
             <div class="flex flex-col sm:flex-row sm:items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-sm">
-                <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0">👤 行政負責人過濾：</span>
+                <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0">👤 成員快選過濾：</span>
                 <div class="flex flex-wrap gap-1.5" id="admin-owner-filter-pills"></div>
             </div>
 
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 行政任務輸入區 -->
                 <div class="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-slate-100 pb-6 lg:pb-0 lg:pr-6 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center gap-2.5">
                             <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                             </div>
-                            <h3 class="font-bold text-lg text-slate-900">日常行政與跨專案雜務</h3>
+                            <h3 class="font-bold text-lg text-slate-900">日常行政事務登錄</h3>
                         </div>
                         <p class="text-sm text-slate-500 mt-2 leading-relaxed">
-                            臨時工作、沒有固定 SOP 的請款核銷、跨專案監測表填寫、或跨品牌例行事項，都在這裡統一記錄。此工作面板獨立於各 Campaign。
+                            非Campaign的月報、日報、對帳、核銷、跨品牌例行行政，請指派對應的客戶別與預計完成日，以利即時同步追蹤。
                         </p>
                     </div>
 
                     <div class="mt-6 space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <span class="text-sm font-bold text-slate-700 block">⚡ 新增行政任務</span>
+                        <span class="text-sm font-bold text-slate-700 block">⚡ 新增行政雜務</span>
                         <div>
-                            <input type="text" id="admin-task-input" placeholder="任務描述 (例：辦理 A/B 品牌六月請款)" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
+                            <input type="text" id="admin-task-input" placeholder="任務描述 (例：彙整與寄出六月份成效週報)" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <select id="admin-task-category" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-700">
-                                <option value="請款/報支">💰 請款/報支</option>
-                                <option value="合約/簽核">📝 合約/簽核</option>
-                                <option value="日常例行">📅 日常例行</option>
-                                <option value="臨時雜務">📌 臨時雜務</option>
+                                <option value="例行週報">📅 例行週報</option>
+                                 <option value="例行月報">📅 例行月報</option>
+                                <option value="請款">💰 請款</option>
+                                <option value="合約/簽核/用印">📝 合約/簽核/用印</option>
+                                <option value="臨時跨專案雜務">📌 臨時跨專案雜務</option>
                             </select>
-                            <input type="text" id="admin-task-owner-input" placeholder="👤 負責人名字" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <input type="text" id="admin-task-client-input" placeholder="🏢 客戶/品牌別" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                         </div>
-                        <div class="w-full">
-                            <input type="date" id="admin-task-date" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-500">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="admin-task-owner-input" placeholder="👤 負責同仁名字" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <input type="date" id="admin-task-date" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-500">
                         </div>
                         <button onclick="addAdminTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 rounded-lg transition-all shadow-sm">
-                            加入看板
+                            加入行政看板
                         </button>
                     </div>
                 </div>
 
+                <!-- 行政 Kanban 欄位 -->
                 <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-100 flex flex-col h-[520px]">
                         <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
@@ -228,58 +255,34 @@
             </div>
         </div>
 
+        <!-- 視圖 4: 團隊公告欄 -->
         <div id="view-toolkit" class="global-view hidden space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <div>
                     <h2 class="text-lg font-bold text-slate-900">📋 公告欄 (Notice Board)</h2>
-                    <p class="text-sm text-slate-500 mt-0.5">用於張貼團隊內部公告、代理商最新規範或客戶交期提醒事項。所有人均可新增/編輯/刪除公告。</p>
+                    <p class="text-sm text-slate-500 mt-0.5">用於張貼團隊內部公告事項。所有人均可自訂張貼。</p>
                 </div>
                 <button onclick="openNoticeModal('add')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 self-start sm:self-auto">
                     <span>➕ 新增公告</span>
                 </button>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="notices-grid"></div>
-        </div>
-
-        <div class="mt-8 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-slate-100 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0">💡</div>
-            <div>
-                <h4 class="font-bold text-slate-900 text-sm">系統數據自動儲存</h4>
-                <p class="text-[11px] text-slate-400 mt-0.5">專案上線日期、自訂時程細項、日常行政看板以及各階段筆記皆會自動儲存於雲端資料庫。</p>
-            </div>
         </div>
 
     </main>
 
+    <!-- 彈窗群組 -->
     <div id="campaign-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-md">
-            <h3 class="font-bold text-slate-900 text-sm mb-4" id="modal-title">新增行銷專案 Campaign</h3>
+            <h3 class="font-bold text-slate-900 text-sm mb-4" id="modal-title">建立行銷專案 Campaign</h3>
             <div class="space-y-4">
                 <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">專案名稱 (例：合利他命_0701_紅轉藍銜接)</label>
-                    <input type="text" id="campaign-name-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">專案上線日期</label>
-                    <input type="date" id="campaign-launch-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700">
-                </div>
-                <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">專案執行項目 (可複選)</label>
-                    <div class="flex gap-4 mt-1 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                        <label class="flex items-center gap-1.5 text-sm text-slate-700 font-semibold cursor-pointer select-none">
-                            <input type="checkbox" id="campaign-include-placement" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                            🎯 媒體投放
-                        </label>
-                        <label class="flex items-center gap-1.5 text-sm text-slate-700 font-semibold cursor-pointer select-none">
-                            <input type="checkbox" id="campaign-include-production" checked class="rounded border-slate-300 text-purple-600 focus:ring-purple-500">
-                            ✍️ 內容產出/網紅
-                        </label>
-                    </div>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">專案名稱 (規格建議：客戶品牌_月份_活動描述)</label>
+                    <input type="text" id="campaign-name-input" placeholder="例：合利他命_0701_紅轉藍銜接" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button onclick="closeCampaignModal()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm rounded-lg transition-all">取消</button>
-                    <button onclick="saveCampaignModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-all">確認儲存</button>
+                    <button onclick="saveCampaignModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-all">確認建立</button>
                 </div>
             </div>
         </div>
@@ -287,36 +290,19 @@
 
     <div id="stage-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-md">
-            <h3 class="font-bold text-slate-900 text-sm mb-4" id="stage-modal-title">新增執行階段</h3>
+            <h3 class="font-bold text-slate-900 text-sm mb-4" id="stage-modal-title">群組管理</h3>
             <div class="space-y-4">
                 <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">階段名稱</label>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">群組/大項目名稱 (例如：素材核對進稿、KOL外發工作)</label>
                     <input type="text" id="stage-name-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">歸屬流程</label>
-                    <select id="stage-phase-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
-                        <option value="placement">🎯 媒體投放</option>
-                        <option value="production">✍️ 內容產出</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">負責人</label>
-                    <input type="text" id="stage-owner-input" placeholder="例：Lynne" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-sm font-bold text-slate-500 block mb-1">開始時間 (天數)</label>
-                        <input type="number" id="stage-offset-start-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="text-sm font-bold text-slate-500 block mb-1">結束時間 (天數)</label>
-                        <input type="number" id="stage-offset-end-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                    </div>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">小組主負責人 (選填)</label>
+                    <input type="text" id="stage-owner-input" placeholder="例：vivian" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button onclick="closeStageModal()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm rounded-lg transition-all">取消</button>
-                    <button onclick="saveStageModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-all">儲存階段</button>
+                    <button onclick="saveStageModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-all">儲存確定</button>
                 </div>
             </div>
         </div>
@@ -352,6 +338,7 @@
         </div>
     </div>
 
+    <!-- 即時提示通知 -->
     <div id="toast-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-sm text-center">
             <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl mx-auto mb-3" id="toast-icon">⚠️</div>
@@ -362,129 +349,62 @@
     </div>
 
     <script>
-        // Firebase 專屬金鑰 配置
-        const firebaseConfig = {
-            apiKey: "AIzaSyBkkNE2y1bjLcJ94fWEAVUwcWLJ6bkBgM8",
-            authDomain: "media-planner-os.firebaseapp.com",
-            projectId: "media-planner-os",
-            storageBucket: "media-planner-os.firebasestorage.app",
-            messagingSenderId: "745129351261",
-            appId: "1:745129351261:web:aee454480e82845e0d15b4"
-        };
-
-        // 初始化連線定義
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        // SOP 標準執行階段範本
-        const defaultStagesBlueprint = [
-            { id: 'p1', name: '發稿與準備', phase: 'placement', owner: '未指定', offsetStart: -45, offsetEnd: -30, items: [
-                { id: 'p1_std_0', text: "與操作或媒體確認細節 (確認預算/走期/TA)", status: "未開始", dueDate: "", completed: false },
-                { id: 'p1_std_1', text: "媒體提供委刊 + 素材規範", status: "未開始", dueDate: "", completed: false },
-                { id: 'p1_std_2', text: "確認內容無誤，製作 Media Cue 及素材規範給客戶", status: "未開始", dueDate: "", completed: false }
-            ]},
-            { id: 'p2', name: '進稿與確認', phase: 'placement', owner: '未指定', offsetStart: -15, offsetEnd: -5, items: [
-                { id: 'p2_std_0', text: "素材進稿 (檢查素材是否都有正確提供 & 文案有無問題)", status: "未開始", dueDate: "", completed: false },
-                { id: 'p2_std_1', text: "操作設定並提供 Demo 預覽", status: "未開始", dueDate: "", completed: false },
-                { id: 'p2_std_2', text: "提供 Demo 給客戶確認", status: "未開始", dueDate: "", completed: false },
-                { id: 'p2_std_3', text: "來回微調 / 確認 Demo", status: "未開始", dueDate: "", completed: false }
-            ]},
-            { id: 'p3', name: '上線與優化', phase: 'placement', owner: '未指定', offsetStart: 0, offsetEnd: 5, items: [
-                { id: 'p3_std_0', text: "廣告上線 + 提供上刊截圖與連結給客戶", status: "未開始", dueDate: "", completed: false },
-                { id: 'p3_std_1', text: "每週提供週報 & 跟操作討論優化方向", status: "未開始", dueDate: "", completed: false },
-                { id: 'p3_std_2', text: "客戶確認優化方向，通知操作調整", status: "未開始", dueDate: "", completed: false }
-            ]},
-            { id: 'p4', name: '結案成效', phase: 'placement', owner: '未指定', offsetStart: 20, offsetEnd: 31, items: [
-                { id: 'p4_std_0', text: "Campaign 執行結束，製作結案報告", status: "未開始", dueDate: "", completed: false }
-            ]},
-            { id: 'c1', name: '方向/大綱', phase: 'production', owner: '未指定', offsetStart: -45, offsetEnd: -30, items: [
-                { id: 'c1_std_0', text: "與客戶確認人選或撰文方向", status: "未開始", dueDate: "", completed: false },
-                { id: 'c1_std_1', text: "Brief 需求給外發媒體 / KOL", status: "未開始", dueDate: "", completed: false },
-                { id: 'c1_std_2', text: "外發媒體 / KOL 提供人選 List 或撰文大綱", status: "未開始", dueDate: "", completed: false },
-                { id: 'c1_std_3', text: "檢查內容是否符合需求", status: "未開始", dueDate: "", completed: false },
-                { id: 'c1_std_4', text: "提供客戶確認", status: "未開始", dueDate: "", completed: false }
-            ]},
-            { id: 'c2', name: '內容修改', phase: 'production', owner: '未指定', offsetStart: -25, offsetEnd: -15, items: [
-                { id: 'c2_std_0', text: "拍攝 / 撰文執行", status: "未開始", dueDate: "", completed: false },
-                { id: 'c2_std_1', text: "提供初稿或 A-Copy 給客戶", status: "未開始", dueDate: "", completed: false },
-                { id: 'c2_std_2', text: "客戶回覆調整意見", status: "未開始", dueDate: "", completed: false },
-                { id: 'c2_std_3', text: "提供調整或 B-Copy 給客戶", status: "未開始", dueDate: "", completed: false },
-                { id: 'c2_std_4', text: "完稿 / 交片", status: "未開始", dueDate: "", completed: false }
-            ]},
-            { id: 'c3', name: '上線與成效', phase: 'production', owner: '未指定', offsetStart: 0, offsetEnd: 10, items: [
-                { id: 'c3_std_0', text: "上線 + 提供連結或上刊給客戶", status: "未開始", dueDate: "", completed: false },
-                { id: 'c3_std_1', text: "Campaign 結束提醒媒體 / KOL 提供成效數據", status: "未開始", dueDate: "", completed: false }
-            ]}
-        ];
-
-        function createNewCampaignObject(id, name, launchDate = '', includePlacement = true, includeProduction = true) {
-            const filteredStages = defaultStagesBlueprint.filter(stage => {
-                if (stage.phase === 'placement') return includePlacement;
-                if (stage.phase === 'production') return includeProduction;
-                return true;
-            });
-
-            return {
-                id: id,
-                name: name,
-                launchDate: launchDate,
-                includePlacement: includePlacement,
-                includeProduction: includeProduction,
-                stages: JSON.parse(JSON.stringify(filteredStages))
-            };
-        }
-
-        let state = {
-            campaigns: [],
-            activeCampaignId: '',
-            adminTasks: [],
-            notices: []
-        };
-
+        // 1. 初始化資料庫定義
+        let state = { campaigns: [], adminTasks: [], notices: [] };
         let currentOwnerFilter = 'all';
         let currentBrandFilter = 'all'; 
         let currentAdminOwnerFilter = 'all'; 
+        let currentCalendarOwnerFilter = 'all'; // 行事曆同仁快選控制變數
+
+        // 智能行事曆用時間變數
+        let calendarCurrentDate = new Date(); 
 
         let currentModalMode = 'add';
         let currentStageModalMode = 'add';
         let activeStageIdInModal = '';
         let currentNoticeModalMode = 'add';
         let activeNoticeIdInModal = '';
-
-        let activeSubTab = 'placement';
         let currentGlobalView = 'dashboard';
 
-        function addWorkingDays(startDateStr, daysOffset) {
-            if (!startDateStr) return null;
-            let date = new Date(startDateStr);
-            if (isNaN(date.getTime())) return null;
-            
-            let absOffset = Math.abs(daysOffset);
-            let step = daysOffset >= 0 ? 1 : -1;
-            
-            let count = 0;
-            while (count < absOffset) {
-                date.setDate(date.getDate() + step);
-                let day = date.getDay();
-                if (day !== 0 && day !== 6) { count++; }
+        // 輔助函式：取得今日日期字串 YYYY-MM-DD 供過期比對
+        function getTodayString() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // 比對是否過期 (如果是 YYYY-MM-DD 或 MM/DD 格式)
+        function checkIsOverdue(dateStr, isCompleted) {
+            if (isCompleted || !dateStr || dateStr === '無截止日') return false;
+            let targetDate;
+            if (dateStr.includes('-')) {
+                targetDate = new Date(dateStr);
+            } else if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                const year = new Date().getFullYear();
+                targetDate = new Date(year, parseInt(parts[0]) - 1, parseInt(parts[1]));
+            } else {
+                return false;
             }
-            return date;
+            if (isNaN(targetDate.getTime())) return false;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            targetDate.setHours(0,0,0,0);
+            return targetDate < today;
         }
 
-        function formatDateWithDay(dateObj) {
-            if (!dateObj) return '';
-            const yyyy = dateObj.getFullYear();
-            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const dd = String(dateObj.getDate()).padStart(2, '0');
-            const daysOfWeek = ['日', '一', '二', '三', '四', '五', '六'];
-            return `${yyyy}/${mm}/${dd} (${daysOfWeek[dateObj.getDay()]})`;
+        // 解析品牌客戶別
+        function getBrandFromCampaignName(name) {
+            if (!name) return '其他';
+            return name.includes('_') ? name.split('_')[0].trim() : '其他';
         }
 
-        function formatDateStringWithDay(dateStr) {
-            if (!dateStr) return '';
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return '';
-            return formatDateWithDay(date);
+        function getAllBrands() {
+            const brands = new Set();
+            state.campaigns.forEach(c => brands.add(getBrandFromCampaignName(c.name)));
+            return Array.from(brands);
         }
 
         function getAllOwners() {
@@ -492,1329 +412,417 @@
             state.campaigns.forEach(camp => {
                 if (camp.stages) {
                     camp.stages.forEach(stage => {
-                        if (stage.owner && stage.owner !== '未指定' && stage.owner.trim() !== '') {
-                            owners.add(stage.owner.trim());
+                        if (stage.owner && stage.owner !== '未指定' && stage.owner.trim() !== '') owners.add(stage.owner.trim());
+                        if (stage.items) {
+                            stage.items.forEach(it => {
+                                if (it.owner && it.owner !== '未指定' && it.owner.trim() !== '') owners.add(it.owner.trim());
+                            });
                         }
                     });
                 }
             });
-            return Array.from(owners);
-        }
-
-        function getAllAdminOwners() {
-            const owners = new Set();
             state.adminTasks.forEach(task => {
-                if (task.owner && task.owner !== '未指定' && task.owner.trim() !== '') {
-                    owners.add(task.owner.trim());
-                }
+                if (task.owner && task.owner !== '未指定' && task.owner.trim() !== '') owners.add(task.owner.trim());
             });
-            getAllOwners().forEach(o => owners.add(o));
             return Array.from(owners);
         }
 
-        function getBrandFromCampaignName(name) {
-            if (!name) return '其他';
-            if (name.includes('_')) {
-                return name.split('_')[0].trim();
-            }
-            return '其他';
-        }
-
-        function getAllBrands() {
-            const brands = new Set();
-            state.campaigns.forEach(camp => {
-                brands.add(getBrandFromCampaignName(camp.name));
-            });
-            return Array.from(brands);
-        }
-
-        function getStageTimelineText(stage, launchDate) {
-            if (stage.customStart && stage.customEnd) {
-                return `📅 自訂：${formatDateStringWithDay(stage.customStart)} ~ ${formatDateStringWithDay(stage.customEnd)}`;
-            }
-            if (!launchDate) {
-                return `🕒 上線日未定 (預設開始: ${stage.offsetStart}天 / 結束: ${stage.offsetEnd}天)`;
-            }
-            const startDateObj = addWorkingDays(launchDate, stage.offsetStart || 0);
-            const endDateObj = addWorkingDays(launchDate, stage.offsetEnd || 0);
-            if (!startDateObj || !endDateObj) return '';
-            return `📅 建議：${formatDateWithDay(startDateObj)} ~ ${formatDateWithDay(endDateObj)}`;
-        }
-
-        function triggerCustomAlert(title, message, isConfirm = false, onConfirmCallback = null) {
-            const modal = document.getElementById('toast-modal');
-            const titleEl = document.getElementById('toast-title');
-            const msgEl = document.getElementById('toast-message');
-            const controls = document.getElementById('toast-controls');
-            const iconEl = document.getElementById('toast-icon');
-
-            titleEl.textContent = title;
-            msgEl.textContent = message;
-            controls.innerHTML = '';
-            
-            if (isConfirm) {
-                iconEl.innerHTML = '⚠️';
-                iconEl.className = "w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl mx-auto mb-3";
-                
-                const cancelBtn = document.createElement('button');
-                cancelBtn.className = "px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-lg transition-all";
-                cancelBtn.textContent = "取消";
-                cancelBtn.onclick = () => { modal.classList.add('hidden'); };
-                
-                const confirmBtn = document.createElement('button');
-                confirmBtn.className = "px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-lg transition-all";
-                confirmBtn.textContent = "確定";
-                confirmBtn.onclick = () => {
-                    modal.classList.add('hidden');
-                    if (onConfirmCallback) onConfirmCallback();
-                };
-                controls.appendChild(cancelBtn);
-                controls.appendChild(confirmBtn);
-            } else {
-                iconEl.innerHTML = 'ℹ️';
-                iconEl.className = "w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mx-auto mb-3";
-                
-                const closeBtn = document.createElement('button');
-                closeBtn.className = "px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-all";
-                closeBtn.textContent = "關閉";
-                closeBtn.onclick = () => { modal.classList.add('hidden'); };
-                controls.appendChild(closeBtn);
-            }
-            modal.classList.remove('hidden');
-        }
-
-        function changeGlobalView(viewName) {
-            currentGlobalView = viewName;
-            document.querySelectorAll('.global-view').forEach(el => {
-                el.classList.add('hidden');
-                el.classList.remove('block');
-            });
-
-            if (viewName === 'campaign-detail') {
-                document.getElementById('view-campaign-detail').classList.remove('hidden');
-                document.getElementById('view-campaign-detail').classList.add('block');
-            } else {
-                const viewEl = document.getElementById('view-' + viewName);
-                if (viewEl) {
-                    viewEl.classList.remove('hidden');
-                    viewEl.classList.add('block');
-                }
-            }
-
-            document.querySelectorAll('.nav-tab').forEach(btn => {
-                btn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100";
-            });
-
-            const activeNavBtn = document.getElementById('nav-' + viewName);
-            if (activeNavBtn) {
-                if (viewName === 'dashboard') {
-                    activeNavBtn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-indigo-700 bg-indigo-50";
-                } else if (viewName === 'adminboard') {
-                    activeNavBtn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-emerald-700 bg-emerald-50";
-                } else if (viewName === 'toolkit') {
-                    activeNavBtn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-indigo-905 bg-indigo-50";
-                }
-            }
-            renderUI();
-        }
-
-        function switchDetailTab(subTabId) {
-            activeSubTab = subTabId;
-            document.querySelectorAll('.detail-tab').forEach(btn => {
-                btn.className = "detail-tab flex-1 py-3 px-3 rounded-lg font-bold text-sm md:text-sm text-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all duration-200";
-            });
-
-            const activeBtn = document.getElementById('tab-' + subTabId);
-            const banner = document.getElementById('detail-progress-bar-container');
-            const bannerText = document.getElementById('detail-tab-banner-text');
-
-            if (subTabId === 'placement') {
-                if (activeBtn) activeBtn.className = "detail-tab flex-1 py-3 px-3 rounded-lg font-bold text-sm md:text-sm text-center transition-all duration-200 bg-indigo-50 text-indigo-700";
-                banner.className = "bg-indigo-50/50 rounded-xl px-4 py-3 border border-indigo-100 flex justify-between items-center text-sm";
-                bannerText.textContent = "🎯 投放時程與預算準確度把關 (排除週末假日)";
-            } else {
-                if (activeBtn) activeBtn.className = "detail-tab flex-1 py-3 px-3 rounded-lg font-bold text-sm md:text-sm text-center transition-all duration-200 bg-purple-50 text-purple-700";
-                banner.className = "bg-purple-50/50 rounded-xl px-4 py-3 border border-purple-100 flex justify-between items-center text-sm";
-                bannerText.textContent = "✍️ 外發媒體、KOL 合作與網頁產出審理 (排除週末假日)";
-            }
-            renderUI();
-        }
-
-        function enterCampaignDetail(campId) {
-            state.activeCampaignId = campId;
-            const active = getActiveCampaign();
-            if (active) {
-                const hasPlacement = active.includePlacement !== false;
-                const hasProduction = active.includeProduction !== false;
-                if (!hasPlacement && hasProduction) {
-                    activeSubTab = 'production';
-                } else {
-                    activeSubTab = 'placement';
-                }
-            }
-            saveStateToStorage();
-            changeGlobalView('campaign-detail');
-        }
-
-        function getActiveCampaign() {
-            let active = state.campaigns.find(c => c.id === state.activeCampaignId);
-            if (!active && state.campaigns.length > 0) {
-                state.activeCampaignId = state.campaigns[0].id;
-                active = state.campaigns[0];
-            }
-            return active;
-        }
-
-        function openCampaignModal(mode) {
-            const input = document.getElementById('campaign-name-input');
-            const dateInput = document.getElementById('campaign-launch-input');
-            const chkPlacement = document.getElementById('campaign-include-placement');
-            const chkProduction = document.getElementById('campaign-include-production');
-            const title = document.getElementById('modal-title');
-            
-            currentModalMode = mode;
-
-            if (mode === 'add') {
-                title.textContent = '➕ 新增品牌行銷專案 Campaign';
-                input.value = '';
-                dateInput.value = '';
-                chkPlacement.checked = true;
-                chkProduction.checked = true;
-            } else if (mode === 'rename') {
-                title.textContent = '✏️ 編輯專案與上線日期';
-                const active = getActiveCampaign();
-                if (active) {
-                    input.value = active.name;
-                    dateInput.value = active.launchDate || '';
-                    chkPlacement.checked = active.includePlacement !== false;
-                    chkProduction.checked = active.includeProduction !== false;
-                }
-            }
-            document.getElementById('campaign-modal').classList.remove('hidden');
-            input.focus();
-        }
-
-        function closeCampaignModal() {
-            document.getElementById('campaign-modal').classList.add('hidden');
-        }
-
-        function saveCampaignModal() {
-            const input = document.getElementById('campaign-name-input');
-            const dateInput = document.getElementById('campaign-launch-input');
-            const chkPlacement = document.getElementById('campaign-include-placement');
-            const chkProduction = document.getElementById('campaign-include-production');
-            
-            const nameText = input.value.trim();
-            const launchDateVal = dateInput.value;
-            const incPlacement = chkPlacement.checked;
-            const incProduction = chkProduction.checked;
-
-            if (nameText === '') return;
-
-            if (!incPlacement && !incProduction) {
-                triggerCustomAlert("專案設定錯誤", "請至少勾選一項專案執行項目（媒體投放 或 內容產出/網紅）。");
-                return;
-            }
-
-            if (currentModalMode === 'add') {
-                const newId = 'camp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-                const newCampaign = createNewCampaignObject(newId, nameText, launchDateVal, incPlacement, incProduction);
-                state.campaigns.push(newCampaign);
-                state.activeCampaignId = newId;
-                closeCampaignModal();
-                saveStateToStorage();
-                renderUI();
-                enterCampaignDetail(newId);
-            } else if (currentModalMode === 'rename') {
-                const active = getActiveCampaign();
-                if (active) {
-                    active.name = nameText;
-                    active.launchDate = launchDateVal;
-                    
-                    const oldPlacement = active.includePlacement !== false;
-                    const oldProduction = active.includeProduction !== false;
-
-                    active.includePlacement = incPlacement;
-                    active.includeProduction = incProduction;
-
-                    if (incPlacement && !oldPlacement) {
-                        const placementStages = defaultStagesBlueprint.filter(s => s.phase === 'placement');
-                        active.stages.push(...JSON.parse(JSON.stringify(placementStages)));
-                    } else if (!incPlacement && oldPlacement) {
-                        active.stages = active.stages.filter(s => s.phase !== 'placement');
-                    }
-
-                    if (incProduction && !oldProduction) {
-                        const productionStages = defaultStagesBlueprint.filter(s => s.phase === 'production');
-                        active.stages.push(...JSON.parse(JSON.stringify(productionStages)));
-                    } else if (!incProduction && oldProduction) {
-                        active.stages = active.stages.filter(s => s.phase !== 'production');
-                    }
-                }
-                closeCampaignModal();
-                saveStateToStorage();
-                renderUI();
-            }
-        }
-
-        function triggerRenameActive() {
-            openCampaignModal('rename');
-        }
-
-        function triggerDeleteActive() {
-            if (state.campaigns.length <= 1) {
-                triggerCustomAlert("無法刪除", "至少需要保留一個行銷專案，以進行管理。");
-                return;
-            }
-            const active = getActiveCampaign();
-            if (!active) return;
-
-            triggerCustomAlert(
-                "確認刪除專案", 
-                `確定要將「${active.name}」專案完全刪除嗎？刪除後所有的執行進度與筆記將無法復原。`, 
-                true, 
-                () => {
-                    state.campaigns = state.campaigns.filter(c => c.id !== active.id);
-                    state.activeCampaignId = state.campaigns[0].id;
-                    saveStateToStorage();
-                    changeGlobalView('dashboard');
-                }
-            );
-        }
-
-        function triggerDeleteFromDashboard(campId, event) {
-            event.stopPropagation();
-            if (state.campaigns.length <= 1) {
-                triggerCustomAlert("無法刪除", "至少需要保留一個行銷專案。");
-                return;
-            }
-            const targeted = state.campaigns.find(c => c.id === campId);
-            if (!targeted) return;
-
-            triggerCustomAlert(
-                "確認刪除專案", 
-                `確定要將「${targeted.name}」專案完全刪除嗎？`, 
-                true, 
-                () => {
-                    state.campaigns = state.campaigns.filter(c => c.id !== campId);
-                    if (state.activeCampaignId === campId) {
-                        state.activeCampaignId = state.campaigns[0].id;
-                    }
-                    saveStateToStorage();
-                    renderUI();
-                }
-            );
-        }
-
-        function saveStageNote(stageId, textValue) {
-            const active = getActiveCampaign();
-            if (active) {
-                const stage = active.stages.find(s => s.id === stageId);
-                if (stage) {
-                    stage.note = textValue;
-                    saveStateToStorage();
-                }
-            }
-        }
-
-        function toggleItemCompletion(campId, stageId, itemId) {
-            const camp = state.campaigns.find(c => c.id === campId);
-            if (camp && camp.stages) {
-                const stage = camp.stages.find(s => s.id === stageId);
-                if (stage && stage.items) {
-                    const item = stage.items.find(it => it.id === itemId);
-                    if (item) {
-                        item.completed = !item.completed;
-                        item.status = item.completed ? "已完成" : "進行中";
-                        saveStateToStorage();
-                        renderUI();
-                    }
-                }
-            }
-        }
-
-        function changeItemStatus(campId, stageId, itemId, newStatus) {
-            const camp = state.campaigns.find(c => c.id === campId);
-            if (camp && camp.stages) {
-                const stage = camp.stages.find(s => s.id === stageId);
-                if (stage && stage.items) {
-                    const item = stage.items.find(it => it.id === itemId);
-                    if (item) {
-                        item.status = newStatus;
-                        item.completed = (newStatus === "已完成");
-                        saveStateToStorage();
-                        renderUI();
-                    }
-                }
-            }
-        }
-
-        function startInlineEdit(stageId, itemId, element) {
-            if (element.querySelector('input')) return;
-            const active = getActiveCampaign();
-            if (!active) return;
-            const stage = active.stages.find(s => s.id === stageId);
-            const item = stage.items.find(it => it.id === itemId);
-            
-            const currentText = item.text;
-            element.innerHTML = `<input type="text" class="w-full text-sm border border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-normal text-slate-800" value="${escapeHTML(currentText)}">`;
-            
-            const input = element.querySelector('input');
-            input.focus();
-            input.select();
-            
-            const saveEdit = () => {
-                const val = input.value.trim();
-                if (val !== "") {
-                    item.text = val;
-                    saveStateToStorage();
-                }
-                renderUI();
-            };
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') saveEdit();
-                if (e.key === 'Escape') renderUI();
-            });
-            input.addEventListener('blur', saveEdit);
-        }
-
-        function startInlineDateEdit(stageId, itemId, element) {
-            if (element.querySelector('input')) return;
-            const active = getActiveCampaign();
-            if (!active) return;
-            const stage = active.stages.find(s => s.id === stageId);
-            const item = stage.items.find(it => it.id === itemId);
-            
-            const currentText = item.dueDate || "";
-            element.innerHTML = `<input type="text" placeholder="例: 06/20" class="w-16 text-center text-xs border border-indigo-400 rounded px-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold" value="${escapeHTML(currentText)}">`;
-            
-            const input = element.querySelector('input');
-            input.focus();
-            
-            const saveDate = () => {
-                item.dueDate = input.value.trim();
-                saveStateToStorage();
-                renderUI();
-            };
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') saveDate();
-                if (e.key === 'Escape') renderUI();
-            });
-            input.addEventListener('blur', saveDate);
-        }
-
-        function openStageModal(mode, stageId = '') {
-            currentStageModalMode = mode;
-            activeStageIdInModal = stageId;
-
-            const title = document.getElementById('stage-modal-title');
-            const nameIn = document.getElementById('stage-name-input');
-            const phaseIn = document.getElementById('stage-phase-input');
-            const ownerIn = document.getElementById('stage-owner-input');
-            const startIn = document.getElementById('stage-offset-start-input');
-            const endIn = document.getElementById('stage-offset-end-input');
-
-            if (mode === 'add') {
-                title.textContent = '➕ 新增自訂執行階段';
-                nameIn.value = '';
-                phaseIn.value = activeSubTab; 
-                ownerIn.value = '';
-                startIn.value = '0';
-                endIn.value = '5';
-            } else if (mode === 'edit') {
-                title.textContent = '✏️ 編輯階段細節與負責人';
-                const active = getActiveCampaign();
-                if (active) {
-                    const stage = active.stages.find(s => s.id === stageId);
-                    if (stage) {
-                        nameIn.value = stage.name;
-                        phaseIn.value = stage.phase;
-                        ownerIn.value = stage.owner || '未指定';
-                        startIn.value = stage.offsetStart !== undefined ? stage.offsetStart : 0;
-                        endIn.value = stage.offsetEnd !== undefined ? stage.offsetEnd : 5;
-                    }
-                }
-            }
-            document.getElementById('stage-modal').classList.remove('hidden');
-        }
-
-        function closeStageModal() {
-            document.getElementById('stage-modal').classList.add('hidden');
-        }
-
-        function saveStageModal() {
-            const active = getActiveCampaign();
-            if (!active) return;
-
-            const nameVal = document.getElementById('stage-name-input').value.trim();
-            const phaseVal = document.getElementById('stage-phase-input').value;
-            const ownerVal = document.getElementById('stage-owner-input').value.trim() || '未指定';
-            const startVal = parseInt(document.getElementById('stage-offset-start-input').value) || 0;
-            const endVal = parseInt(document.getElementById('stage-offset-end-input').value) || 0;
-
-            if (nameVal === '') return;
-
-            if (startVal > endVal) {
-                triggerCustomAlert("時間設定錯誤", "「開始時間」不能晚於「結束時間」。");
-                return;
-            }
-
-            if (currentStageModalMode === 'add') {
-                const newStageId = 'stage_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-                const newStage = {
-                    id: newStageId,
-                    name: nameVal,
-                    phase: phaseVal,
-                    owner: ownerVal,
-                    offsetStart: startVal,
-                    offsetEnd: endVal,
-                    note: '',
-                    items: []
-                };
-                active.stages.push(newStage);
-            } else if (currentStageModalMode === 'edit') {
-                const stage = active.stages.find(s => s.id === activeStageIdInModal);
-                if (stage) {
-                    stage.name = nameVal;
-                    stage.phase = phaseVal;
-                    stage.owner = ownerVal;
-                    stage.offsetStart = startVal;
-                    stage.offsetEnd = endVal;
-                }
-            }
-
-            closeStageModal();
-            saveStateToStorage();
-            renderUI();
-        }
-
-        function deleteStage(stageId, event) {
-            if (event) event.stopPropagation();
-            const active = getActiveCampaign();
-            if (!active) return;
-
-            const stage = active.stages.find(s => s.id === stageId);
-            if (!stage) return;
-
-            triggerCustomAlert(
-                "刪除執行階段",
-                `確定要將「${stage.name}」階段完全刪除嗎？`,
-                true,
-                () => {
-                    active.stages = active.stages.filter(s => s.id !== stageId);
-                    saveStateToStorage();
-                    renderUI();
-                }
-            );
-        }
-
-        function toggleDateEdit(stageId, event) {
-            if (event) event.stopPropagation();
-            const panel = document.getElementById(`date-edit-panel-${stageId}`);
-            if (!panel) return;
-            const isCurrentlyHidden = panel.classList.contains('hidden');
-            
-            document.querySelectorAll('[id^="date-edit-panel-"]').forEach(p => p.classList.add('hidden'));
-
-            if (isCurrentlyHidden) {
-                panel.classList.remove('hidden');
-                populateDateInputs(stageId);
-            }
-        }
-
-        function populateDateInputs(stageId) {
-            const active = getActiveCampaign();
-            if (!active) return;
-            const stage = active.stages.find(s => s.id === stageId);
-            if (!stage) return;
-
-            let startVal = '';
-            let endVal = '';
-
-            if (stage.customStart && stage.customEnd) {
-                startVal = stage.customStart;
-                endVal = stage.customEnd;
-            } else if (active.launchDate) {
-                const startDateObj = addWorkingDays(active.launchDate, stage.offsetStart || 0);
-                const endDateObj = addWorkingDays(active.launchDate, stage.offsetEnd || 0);
-                if (startDateObj) startVal = startDateObj.toISOString().split('T')[0];
-                if (endDateObj) endVal = endDateObj.toISOString().split('T')[0];
-            }
-            document.getElementById(`date-start-${stageId}`).value = startVal;
-            document.getElementById(`date-end-${stageId}`).value = endVal;
-        }
-
-        function saveStageDate(stageId) {
-            const active = getActiveCampaign();
-            if (!active) return;
-            const stage = active.stages.find(s => s.id === stageId);
-            if (!stage) return;
-
-            const start = document.getElementById(`date-start-${stageId}`).value;
-            const end = document.getElementById(`date-end-${stageId}`).value;
-
-            if (!start || !end) {
-                triggerCustomAlert("時程設定錯誤", "請完整選擇「開始日期」與「結束日期」。");
-                return;
-            }
-            if (new Date(start) > new Date(end)) {
-                triggerCustomAlert("時程設定錯誤", "「開始日期」不能晚於「結束日期」。");
-                return;
-            }
-
-            stage.customStart = start;
-            stage.customEnd = end;
-
-            saveStateToStorage();
-            document.getElementById(`date-edit-panel-${stageId}`).classList.add('hidden');
-            renderUI();
-        }
-
-        function resetStageDate(stageId) {
-            const active = getActiveCampaign();
-            if (!active) return;
-            const stage = active.stages.find(s => s.id === stageId);
-            if (stage) {
-                stage.customStart = '';
-                stage.customEnd = '';
-            }
-            saveStateToStorage();
-            document.getElementById(`date-edit-panel-${stageId}`).classList.add('hidden');
-            renderUI();
-        }
-
-        function addCustomItem(stageId) {
-            const inputEl = document.getElementById(`input-${stageId}`);
-            const text = inputEl.value.trim();
-            if (text === '') return;
-
-            const active = getActiveCampaign();
-            if (!active) return;
-
-            const stage = active.stages.find(s => s.id === stageId);
-            if (stage) {
-                const item = {
-                    id: 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                    text: text,
-                    status: "未開始",
-                    dueDate: "",
-                    completed: false
-                };
-                if (!stage.items) stage.items = [];
-                stage.items.push(item);
-                inputEl.value = '';
-                saveStateToStorage();
-                renderUI();
-            }
-        }
-
-        function deleteItem(stageId, itemId, event) {
-            if (event) event.stopPropagation();
-            const active = getActiveCampaign();
-            if (!active) return;
-
-            const stage = active.stages.find(s => s.id === stageId);
-            if (stage) {
-                const targetText = stage.items.find(it => it.id !== itemId);
-                const itemObj = stage.items.find(it => it.id === itemId);
-                if (!itemObj) return;
-
-                triggerCustomAlert(
-                    "確認刪除細項",
-                    `確定要將此執行細項「${itemObj.text}」刪除嗎？`,
-                    true,
-                    () => {
-                        stage.items = stage.items.filter(it => it.id !== itemId);
-                        saveStateToStorage();
-                        renderUI();
-                    }
-                );
-            }
-        }
-
-        function addAdminTask() {
-            const input = document.getElementById('admin-task-input');
-            const categorySelect = document.getElementById('admin-task-category');
-            const ownerInput = document.getElementById('admin-task-owner-input');
-            const dateInput = document.getElementById('admin-task-date');
-
-            const text = input.value.trim();
-            const ownerText = ownerInput.value.trim() || '未指定';
-            if (text === '') return;
-
-            const newTask = {
-                id: 'admin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                text: text,
-                category: categorySelect.value,
-                owner: ownerText,
-                dueDate: dateInput.value || '無截止日',
-                status: 'todo'
-            };
-
-            state.adminTasks.push(newTask);
-            
-            input.value = '';
-            dateInput.value = '';
-            ownerInput.value = '';
-            
-            saveStateToStorage();
-            renderUI();
-        }
-
-        function moveAdminTask(taskId, nextStatus) {
-            const task = state.adminTasks.find(t => t.id === taskId);
-            if (task) {
-                task.status = nextStatus;
-                saveStateToStorage();
-                renderUI();
-            }
-        }
-
-        function deleteAdminTask(taskId) {
-            state.adminTasks = state.adminTasks.filter(t => t.id !== taskId);
-            saveStateToStorage();
-            renderUI();
-        }
-
-        function openNoticeModal(mode, noticeId = '') {
-            currentNoticeModalMode = mode;
-            activeNoticeIdInModal = noticeId;
-
-            const title = document.getElementById('notice-modal-title');
-            const nTitle = document.getElementById('notice-title-input');
-            const nContent = document.getElementById('notice-content-input');
-            const nAuthor = document.getElementById('notice-author-input');
-            const nDate = document.getElementById('notice-date-input');
-
-            if (mode === 'add') {
-                title.textContent = '➕ 張貼新公告';
-                nTitle.value = '';
-                nContent.value = '';
-                nAuthor.value = '團隊成員';
-                nDate.value = new Date().toISOString().split('T')[0];
-            } else if (mode === 'edit') {
-                title.textContent = '✏️ 編輯公告內容';
-                const notice = state.notices.find(n => n.id === noticeId);
-                if (notice) {
-                    nTitle.value = notice.title;
-                    nContent.value = notice.content;
-                    nAuthor.value = notice.author;
-                    nDate.value = notice.date;
-                }
-            }
-            document.getElementById('notice-modal').classList.remove('hidden');
-        }
-
-        function closeNoticeModal() {
-            document.getElementById('notice-modal').classList.add('hidden');
-        }
-
-        function saveNoticeModal() {
-            const titleVal = document.getElementById('notice-title-input').value.trim();
-            const contentVal = document.getElementById('notice-content-input').value.trim();
-            const authorVal = document.getElementById('notice-author-input').value.trim() || '團隊成員';
-            const dateVal = document.getElementById('notice-date-input').value;
-
-            if (titleVal === '' || contentVal === '') {
-                triggerCustomAlert("欄位未齊全", "請填寫公告標題與公告內容。");
-                return;
-            }
-
-            if (currentNoticeModalMode === 'add') {
-                const newNotice = {
-                    id: 'notice_' + Date.now(),
-                    title: titleVal,
-                    content: contentVal,
-                    author: authorVal,
-                    date: dateVal || new Date().toISOString().split('T')[0]
-                };
-                state.notices.unshift(newNotice); 
-            } else if (currentNoticeModalMode === 'edit') {
-                const notice = state.notices.find(n => n.id === activeNoticeIdInModal);
-                if (notice) {
-                    notice.title = titleVal;
-                    notice.content = contentVal;
-                    notice.author = authorVal;
-                    notice.date = dateVal;
-                }
-            }
-            closeNoticeModal();
-            saveStateToStorage();
-            renderUI();
-        }
-
-        function deleteNotice(noticeId, event) {
-            if (event) event.stopPropagation();
-            const notice = state.notices.find(n => n.id === noticeId);
-            if (!notice) return;
-
-            triggerCustomAlert(
-                "確認刪除公告",
-                `確定要永久下架公告「${notice.title}」嗎？`,
-                true,
-                () => {
-                    state.notices = state.notices.filter(n => n.id !== noticeId);
-                    saveStateToStorage();
-                    renderUI();
-                }
-            );
-        }
-
-        function resetAll() {
-            localStorage.removeItem('mediaPlannerMultiStateV8_3'); 
-            
-            const demo1 = createNewCampaignObject('camp_demo1', '合利他命_0701_紅轉藍銜接', '2026-07-01', true, true);
-            const demo2 = createNewCampaignObject('camp_demo2', '合利他命_0727_New HCP', '2026-08-01', true, true);
-            
-            demo1.stages[0].owner = 'vivian';
-            demo1.stages[0].items[0].completed = true;
-            demo1.stages[0].items[0].status = "已完成";
-            demo1.stages[0].items[1].completed = true;
-            demo1.stages[0].items[1].status = "已完成";
-            
-            demo1.stages[1].owner = '阿華';
-            demo2.stages[0].owner = '阿華';
-
-            const defaultNotices = [
-                {
-                    id: 'notice_1',
-                    title: '💡 媒體企劃新人的 3 大生存金律',
-                    content: '1. 時間是你的生命線：素材進稿、Demo 製作、KOL 審稿都需要時間，永遠要預留 2-3 天的 Buffer 給客戶與自己，不要把時間抓得剛剛好。\n\n2. 凡事留紀錄 (Black & White)：與客戶、操作、外發在電話中確認的任何調整（特別是預算、走期變更），通話後務必發 Email 或通訊軟體留下文字憑證。\n\n3. 數字要極度敏感：無論是 Media Cue 的總預算，還是週報上的數據，寄給客戶前務必交叉核對（Double Check），確保數字邏輯與加總正確。',
-                    date: '2026-06-10',
-                    author: '系統管理員'
-                }
-            ];
-            
-            state = {
-                campaigns: [demo1, demo2],
-                activeCampaignId: 'camp_demo1',
-                adminTasks: [
-                    { id: 'admin_1', text: '請款Moco-Alcon/Alinamin/Zoetis', category: '請款/報支', owner: 'vivian', dueDate: '無截止日', status: 'todo' },
-                    { id: 'admin_2', text: '填寫 A 品牌與 B 品牌跨專案成效監測 Excel 表', category: '日常例行', owner: '阿華', dueDate: '2026-06-15', status: 'progress' },
-                    { id: 'admin_3', text: '審核 KOL 經紀合約範本與法務用印確認', category: '合約/簽核', owner: '未指定', dueDate: '2026-06-12', status: 'done' }
-                ],
-                notices: defaultNotices
-            };
-            
-            currentOwnerFilter = 'all';
-            currentBrandFilter = 'all';
-            currentAdminOwnerFilter = 'all';
-            saveStateToStorage();
-            changeGlobalView('dashboard');
-        }
-
+        // 全局核心讀取寫入 (雲端 Firestore)
         function saveStateToStorage() {
-            localStorage.setItem('mediaPlannerMultiStateV8_3', JSON.stringify(state));
-            db.collection('global').doc('planner_config').set(state)
-            .catch((error) => {
-                console.error("雲端儲存失敗: ", error);
-            });
+            localStorage.setItem('mediaPlannerMultiStateV8_5', JSON.stringify(state));
+            db.collection('global').doc('planner_config').set(state).catch(e => console.error("雲端失敗:", e));
         }
 
         function loadStateFromStorage() {
             db.collection('global').doc('planner_config').onSnapshot((doc) => {
                 if (doc.exists) {
-                    const val = doc.data();
-                    if (val && val.campaigns && val.adminTasks) {
-                        state = val;
-                        renderUI();
-                    }
+                    state = doc.data();
+                    if (!state.campaigns) state.campaigns = [];
+                    if (!state.adminTasks) state.adminTasks = [];
+                    if (!state.notices) state.notices = [];
+                    renderUI();
                 } else {
                     resetAll();
                 }
-            }, (error) => {
-                console.error("雲端連線失敗: ", error);
             });
         }
 
-        function renderOwnerFilterPills() {
-            const container = document.getElementById('owner-filter-pills');
-            if (!container) return;
-            const owners = getAllOwners();
-            container.innerHTML = '';
+        // 頁面視圖控制切換
+        function changeGlobalView(viewName) {
+            currentGlobalView = viewName;
+            document.querySelectorAll('.global-view').forEach(el => { el.classList.add('hidden'); el.classList.remove('block'); });
+            const activeView = document.getElementById('view-' + (viewName === 'campaign-detail' ? 'campaign-detail' : viewName));
+            if (activeView) { activeView.classList.remove('hidden'); activeView.classList.add('block'); }
+            
+            document.querySelectorAll('.nav-tab').forEach(btn => btn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100");
+            const activeNav = document.getElementById('nav-' + viewName);
+            if (activeNav) activeNav.className = `nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewName === 'adminboard'?'text-emerald-700 bg-emerald-50':viewName==='calendarview'?'text-teal-700 bg-teal-50':'text-indigo-700 bg-indigo-50'}`;
+            
+            renderUI();
+        }
 
-            const allBtn = document.createElement('button');
-            allBtn.className = `px-3 py-1.5 rounded-lg font-bold transition-all select-none ${currentOwnerFilter === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-            allBtn.textContent = '全部';
-            allBtn.onclick = (e) => {
-                e.stopPropagation();
-                currentOwnerFilter = 'all';
-                renderCampaignDashboard();
-            };
-            container.appendChild(allBtn);
+        function enterCampaignDetail(campId) {
+            state.activeCampaignId = campId;
+            saveStateToStorage();
+            changeGlobalView('campaign-detail');
+        }
 
-            owners.forEach(owner => {
-                const btn = document.createElement('button');
-                btn.className = `px-3 py-1.5 rounded-lg font-bold transition-all select-none ${currentOwnerFilter === owner ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-                btn.textContent = owner;
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    currentOwnerFilter = owner;
-                    renderCampaignDashboard();
-                };
-                container.appendChild(btn);
+        function getActiveCampaign() {
+            return state.campaigns.find(c => c.id === state.activeCampaignId) || state.campaigns[0];
+        }
+
+        // 專案彈窗核心控制
+        function openCampaignModal(mode) {
+            currentModalMode = mode;
+            const input = document.getElementById('campaign-name-input');
+            if (mode === 'add') { input.value = ''; } 
+            else { const active = getActiveCampaign(); if (active) input.value = active.name; }
+            document.getElementById('campaign-modal').classList.remove('hidden');
+            input.focus();
+        }
+        function closeCampaignModal() { document.getElementById('campaign-modal').classList.add('hidden'); }
+        function saveCampaignModal() {
+            const nameText = document.getElementById('campaign-name-input').value.trim();
+            if (!nameText) return;
+            if (currentModalMode === 'add') {
+                const newId = 'camp_' + Date.now();
+                state.campaigns.push({ id: newId, name: nameText, stages: [] });
+                state.activeCampaignId = newId;
+                closeCampaignModal(); saveStateToStorage(); enterCampaignDetail(newId);
+            } else {
+                const active = getActiveCampaign();
+                if (active) active.name = nameText;
+                closeCampaignModal(); saveStateToStorage(); renderUI();
+            }
+        }
+        function triggerRenameActive() { openCampaignModal('rename'); }
+        function triggerDeleteActive() {
+            const active = getActiveCampaign(); if (!active) return;
+            triggerCustomAlert("確認刪除專案", `確定要完全刪除專案「${active.name}」嗎？`, true, () => {
+                state.campaigns = state.campaigns.filter(c => c.id !== active.id);
+                changeGlobalView('dashboard');
+            });
+        }
+        function triggerDeleteFromDashboard(id, e) {
+            e.stopPropagation();
+            triggerCustomAlert("確認刪除專案", "確定要刪除此行銷專案項目嗎？", true, () => {
+                state.campaigns = state.campaigns.filter(c => c.id !== id);
+                saveStateToStorage();
             });
         }
 
-        function renderBrandFilterPills() {
-            const container = document.getElementById('brand-filter-pills');
-            if (!container) return;
-            const brands = getAllBrands();
-            container.innerHTML = '';
-
-            const allBtn = document.createElement('button');
-            allBtn.className = `px-3 py-1.5 rounded-lg font-bold transition-all select-none ${currentBrandFilter === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-            allBtn.textContent = '全部品牌';
-            allBtn.onclick = (e) => {
-                e.stopPropagation();
-                currentBrandFilter = 'all';
-                renderCampaignDashboard();
-            };
-            container.appendChild(allBtn);
-
-            brands.forEach(brand => {
-                const btn = document.createElement('button');
-                btn.className = `px-3 py-1.5 rounded-lg font-bold transition-all select-none ${currentBrandFilter === brand ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-                btn.textContent = brand;
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    currentBrandFilter = brand;
-                    renderCampaignDashboard();
-                };
-                container.appendChild(btn);
+        // 群組階段群組控制器
+        function openStageModal(mode, id='') {
+            currentStageModalMode = mode; activeStageIdInModal = id;
+            const nameIn = document.getElementById('stage-name-input');
+            const ownerIn = document.getElementById('stage-owner-input');
+            if (mode === 'add') { nameIn.value = ''; ownerIn.value = ''; } 
+            else {
+                const active = getActiveCampaign();
+                const stg = active.stages.find(s => s.id === id);
+                if (stg) { nameIn.value = stg.name; ownerIn.value = stg.owner || ''; }
+            }
+            document.getElementById('stage-modal').classList.remove('hidden');
+        }
+        function closeStageModal() { document.getElementById('stage-modal').classList.add('hidden'); }
+        function saveStageModal() {
+            const active = getActiveCampaign(); if (!active) return;
+            const name = document.getElementById('stage-name-input').value.trim();
+            const owner = document.getElementById('stage-owner-input').value.trim() || '未指定';
+            if (!name) return;
+            if (currentStageModalMode === 'add') {
+                active.stages.push({ id: 'stg_' + Date.now(), name: name, owner: owner, items: [] });
+            } else {
+                const stg = active.stages.find(s => s.id === activeStageIdInModal);
+                if (stg) { stg.name = name; stg.owner = owner; }
+            }
+            closeStageModal(); saveStateToStorage(); renderUI();
+        }
+        function deleteStage(stgId, e) {
+            e.stopPropagation();
+            triggerCustomAlert("確認刪除群組", "將一併刪除群組內的工作事項喔！", true, () => {
+                const active = getActiveCampaign();
+                active.stages = active.stages.filter(s => s.id !== stgId);
+                saveStateToStorage();
             });
         }
 
-        function renderAdminOwnerFilterPills() {
-            const container = document.getElementById('admin-owner-filter-pills');
-            if (!container) return;
-            const adminOwners = getAllAdminOwners();
-            container.innerHTML = '';
-
-            const allBtn = document.createElement('button');
-            allBtn.className = `px-3 py-1.5 rounded-lg font-bold transition-all select-none ${currentAdminOwnerFilter === 'all' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-            allBtn.textContent = '全部任務';
-            allBtn.onclick = (e) => {
-                e.stopPropagation();
-                currentAdminOwnerFilter = 'all';
-                renderKanban();
-            };
-            container.appendChild(allBtn);
-
-            adminOwners.forEach(owner => {
-                const btn = document.createElement('button');
-                btn.className = `px-3 py-1.5 rounded-lg font-bold transition-all select-none ${currentAdminOwnerFilter === owner ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-                btn.textContent = owner;
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    currentAdminOwnerFilter = owner;
-                    renderKanban();
-                };
-                container.appendChild(btn);
-            });
-        }
-
-        function renderUI() {
+        // 事項新增與打勾與自訂原地修改
+        function addCustomItem(stgId) {
+            const input = document.getElementById(`input-${stgId}`);
+            const text = input.value.trim(); if (!text) return;
             const active = getActiveCampaign();
-            document.getElementById('global-campaign-count').textContent = state.campaigns.length;
-            const pendingAdminCount = state.adminTasks.filter(t => t.status !== 'done').length;
-            document.getElementById('global-pending-tasks').textContent = pendingAdminCount;
-
-            if (currentGlobalView === 'dashboard') {
-                renderCampaignDashboard();
-            } else if (currentGlobalView === 'campaign-detail') {
-                renderCampaignDetails(active);
-            } else if (currentGlobalView === 'toolkit') {
-                renderNotices();
+            const stg = active.stages.find(s => s.id === stgId);
+            if (stg) {
+                if (!stg.items) stg.items = [];
+                stg.items.push({ id: 'item_' + Date.now() + Math.random().toString(36).substr(2,3), text: text, status: "未開始", owner: stg.owner || "未指定", dueDate: "", completed: false });
+                input.value = ''; saveStateToStorage(); renderUI();
             }
-            renderKanban();
+        }
+        function toggleItemCompletion(stgId, itemId) {
+            const active = getActiveCampaign();
+            const stg = active.stages.find(s => s.id === stgId);
+            const it = stg.items.find(i => i.id === itemId);
+            if (it) {
+                it.completed = !it.completed;
+                it.status = it.completed ? "已完成" : "進行中";
+                saveStateToStorage(); renderUI();
+            }
+        }
+        function changeItemStatusDirect(stgId, itemId, status) {
+            const active = getActiveCampaign();
+            const stg = active.stages.find(s => s.id === stgId);
+            const it = stg.items.find(i => i.id === itemId);
+            if (it) {
+                it.status = status;
+                it.completed = (status === "已完成");
+                saveStateToStorage(); renderUI();
+            }
+        }
+        function deleteItem(stgId, itemId, e) {
+            e.stopPropagation();
+            triggerCustomAlert("刪除事項", "確定刪除此事項？", true, () => {
+                const active = getActiveCampaign();
+                const stg = active.stages.find(s => s.id === stgId);
+                stg.items = stg.items.filter(i => i.id !== itemId);
+                saveStateToStorage();
+            });
         }
 
+        // 原地直接編輯工作分配
+        function startInlineEditItem(stgId, itemId, el) {
+            if (el.querySelector('input')) return;
+            const active = getActiveCampaign();
+            const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
+            const cur = it.text;
+            el.innerHTML = `<input type="text" class="w-full border border-indigo-400 rounded px-1" value="${escapeHTML(cur)}">`;
+            const inp = el.querySelector('input'); inp.focus(); inp.select();
+            const save = () => { if (inp.value.trim()) { it.text = inp.value.trim(); saveStateToStorage(); } renderUI(); };
+            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); };
+            inp.onblur = save;
+        }
+        function startInlineOwnerEdit(stgId, itemId, el) {
+            if (el.querySelector('input')) return;
+            const active = getActiveCampaign();
+            const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
+            el.innerHTML = `<input type="text" class="w-16 border border-indigo-400 rounded text-center text-xs" value="${escapeHTML(it.owner||'')}">`;
+            const inp = el.querySelector('input'); inp.focus();
+            const save = () => { it.owner = inp.value.trim() || '未指定'; saveStateToStorage(); renderUI(); };
+            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); };
+            inp.onblur = save;
+        }
+        function startInlineDateEdit(stgId, itemId, el) {
+            if (el.querySelector('input')) return;
+            const active = getActiveCampaign();
+            const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
+            el.innerHTML = `<input type="text" placeholder="MM/DD" class="w-16 border border-indigo-400 rounded text-center text-xs" value="${escapeHTML(it.dueDate||'')}">`;
+            const inp = el.querySelector('input'); inp.focus();
+            const save = () => { it.dueDate = inp.value.trim(); saveStateToStorage(); renderUI(); };
+            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); };
+            inp.onblur = save;
+        }
+
+        // 日常行政模組控制 (優化：By 客戶區隔、支援截止完成日)
+        function addAdminTask() {
+            const input = document.getElementById('admin-task-input');
+            const categorySelect = document.getElementById('admin-task-category');
+            const clientInput = document.getElementById('admin-task-client-input');
+            const ownerInput = document.getElementById('admin-task-owner-input');
+            const dateInput = document.getElementById('admin-task-date');
+
+            const text = input.value.trim();
+            const clientText = clientInput.value.trim() || '通用行政';
+            const ownerText = ownerInput.value.trim() || '未指定';
+            if (!text) return;
+
+            // 轉換 YYYY-MM-DD 為 MM/DD 利於統一顯示
+            let dDisplay = "無截止日";
+            if (dateInput.value) {
+                const p = dateInput.value.split('-');
+                dDisplay = `${p[1]}/${p[2]}`;
+            }
+
+            state.adminTasks.push({
+                id: 'admin_' + Date.now(),
+                text: text,
+                category: categorySelect.value,
+                client: clientText,
+                owner: ownerText,
+                dueDate: dDisplay,
+                rawDate: dateInput.value, // 保留原始日期供曆法使用
+                status: 'todo'
+            });
+            input.value = ''; clientInput.value = ''; ownerInput.value = ''; dateInput.value = '';
+            saveStateToStorage();
+        }
+
+        // 渲染各區塊看板數據一覽
         function renderCampaignDashboard() {
-            renderOwnerFilterPills();
-            renderBrandFilterPills();
+            // 首頁多重篩選器 Pills 渲染
+            const oContainer = document.getElementById('owner-filter-pills');
+            const bContainer = document.getElementById('brand-filter-pills');
+            const owners = getAllOwners(); const brands = getAllBrands();
 
-            const container = document.getElementById('campaign-grid');
-            container.innerHTML = '';
+            oContainer.innerHTML = `<button onclick="currentOwnerFilter='all';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentOwnerFilter==='all'?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部成員</button>`;
+            owners.forEach(o => { oContainer.innerHTML += `<button onclick="currentOwnerFilter='${o}';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentOwnerFilter===o?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${o}</button>`; });
+            bContainer.innerHTML = `<button onclick="currentBrandFilter='all';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentBrandFilter==='all'?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部客戶</button>`;
+            brands.forEach(b => { bContainer.innerHTML += `<button onclick="currentBrandFilter='${b}';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentBrandFilter===b?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${b}</button>`; });
 
-            let filteredCampaigns = state.campaigns;
-            
-            if (currentOwnerFilter !== 'all') {
-                filteredCampaigns = filteredCampaigns.filter(camp => {
-                    return camp.stages.some(s => s.owner && s.owner.trim() === currentOwnerFilter);
-                });
-            }
-            
-            if (currentBrandFilter !== 'all') {
-                filteredCampaigns = filteredCampaigns.filter(camp => {
-                    return getBrandFromCampaignName(camp.name) === currentBrandFilter;
-                });
-            }
+            const grid = document.getElementById('campaign-grid'); grid.innerHTML = '';
+            let fcamps = state.campaigns;
+            if (currentOwnerFilter !== 'all') fcamps = fcamps.filter(c => c.stages.some(s => s.owner === currentOwnerFilter || s.items.some(i => i.owner === currentOwnerFilter)));
+            if (currentBrandFilter !== 'all') fcamps = fcamps.filter(c => getBrandFromCampaignName(c.name) === currentBrandFilter);
 
-            if (filteredCampaigns.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200">
-                        <p class="text-sm text-slate-400">目前沒有符合所選成員或品牌的行銷專案。</p>
-                    </div>
-                `;
-                return;
-            }
+            if (fcamps.length === 0) { grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 bg-white border rounded-2xl">暫無此篩選條件下的專案看板。</div>`; return; }
 
-            filteredCampaigns.forEach(camp => {
-                const hasPlacement = camp.includePlacement !== false;
-                const hasProduction = camp.includeProduction !== false;
-
-                let pChecked = 0, pTotal = 0;
-                let cChecked = 0, cTotal = 0;
-
-                camp.stages.forEach(stage => {
-                    const list = stage.items || [];
-                    if (stage.phase === 'placement') {
-                        pTotal += list.length;
-                        pChecked += list.filter(i => i.completed).length;
-                    } else {
-                        cTotal += list.length;
-                        cChecked += list.filter(i => i.completed).length;
-                    }
-                });
-
-                const pPercentage = pTotal > 0 ? Math.round((pChecked / pTotal) * 100) : 0;
-                const cPercentage = cTotal > 0 ? Math.round((cChecked / cTotal) * 100) : 0;
-
-                let launchText = '⚠️ 未設定上線日期';
-                let launchBadgeClass = 'bg-slate-100 text-slate-500';
-                if (camp.launchDate) {
-                    launchText = `🚀 上線日：${formatDateStringWithDay(camp.launchDate)}`;
-                    launchBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200/60';
-                }
-
-                let progressBarsHtml = '';
-                if (hasPlacement) {
-                    progressBarsHtml += `
-                        <div>
-                            <div class="flex justify-between items-center text-sm text-slate-600 mb-1">
-                                <span class="font-bold flex items-center gap-1">🎯 媒體投放進度</span>
-                                <span class="font-bold text-indigo-600">${pChecked}/${pTotal} 完成 (${pPercentage}%)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-indigo-600 h-full rounded-full transition-all duration-300" style="width: ${pPercentage}%"></div>
-                            </div>
-                        </div>
-                    `;
-                }
-                if (hasProduction) {
-                    progressBarsHtml += `
-                        <div>
-                            <div class="flex justify-between items-center text-sm text-slate-600 mb-1">
-                                <span class="font-bold flex items-center gap-1">✍️ 內容與網網紅產出</span>
-                                <span class="font-bold text-purple-600">${cChecked}/${cTotal} 完成 (${cPercentage}%)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-purple-600 h-full rounded-full transition-all duration-300" style="width: ${cPercentage}%"></div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                let staffSpecificHtml = '';
-                if (currentOwnerFilter !== 'all') {
-                    const staffStages = camp.stages.filter(s => s.owner && s.owner.trim() === currentOwnerFilter);
-                    let stagesListHtml = '';
-                    staffStages.forEach(s => {
-                        const sChecked = s.items.filter(i => i.completed).length;
-                        const sTotal = s.items.length;
-                        const sPercentage = sTotal > 0 ? Math.round((sChecked / sTotal) * 100) : 0;
-                        const phaseIcon = s.phase === 'placement' ? '🎯' : '✍️';
-                        stagesListHtml += `
-                            <div class="flex items-center justify-between text-[11px] bg-slate-50 p-2 rounded-lg border border-slate-100/80 mt-1">
-                                <span class="font-semibold text-slate-700 line-clamp-1">${phaseIcon} ${escapeHTML(s.name)}</span>
-                                <span class="text-[10px] font-bold text-slate-500 shrink-0 ml-2">${sChecked}/${sTotal} 完成 (${sPercentage}%)</span>
-                            </div>
-                        `;
+            fcamps.forEach(camp => {
+                let total = 0, done = 0, hasOverdue = false;
+                camp.stages.forEach(s => {
+                    (s.items || []).forEach(i => {
+                        total++; if (i.completed) done++;
+                        if (checkIsOverdue(i.dueDate, i.completed)) hasOverdue = true;
                     });
-                    staffSpecificHtml = `
-                        <div class="mt-4 pt-3 border-t border-dashed border-slate-200">
-                            <span class="text-[10px] font-bold text-indigo-700 block mb-1">👤 ${escapeHTML(currentOwnerFilter)} 負責的階段：</span>
-                            <div class="space-y-1 max-h-[100px] overflow-y-auto pr-1">
-                                ${stagesListHtml}
-                            </div>
-                        </div>
-                    `;
-                }
+                });
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
                 const card = document.createElement('div');
-                card.className = `bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200/80 hover:border-indigo-200 transition-all cursor-pointer flex flex-col justify-between min-h-[220px]`;
-                card.setAttribute('onclick', `enterCampaignDetail('${camp.id}')`);
-
+                card.className = `bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border transition-all cursor-pointer flex flex-col justify-between min-h-[180px] ${hasOverdue?'border-rose-300 bg-rose-50/10 hover:border-rose-400': 'border-slate-200/80 hover:border-indigo-200'}`;
+                card.onclick = () => enterCampaignDetail(camp.id);
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start gap-2 mb-2">
-                            <h3 class="font-bold text-slate-900 text-lg md:text-xl">${escapeHTML(camp.name)}</h3>
-                            <button onclick="triggerDeleteFromDashboard('${camp.id}', event)" class="text-slate-300 hover:text-rose-600 transition-all p-1 text-sm shrink-0 font-bold" title="刪除本專案">&times;</button>
+                            <h3 class="font-bold text-slate-900 text-base md:text-lg">${escapeHTML(camp.name)}</h3>
+                            <button onclick="triggerDeleteFromDashboard('${camp.id}', event)" class="text-slate-300 hover:text-rose-600 font-bold text-lg px-1">&times;</button>
                         </div>
-                        <div class="mt-2.5 mb-3">
-                            <span class="text-sm font-bold px-2 py-1 rounded-md ${launchBadgeClass}">
-                                ${launchText}
-                            </span>
+                        <div class="mt-2 flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">📊 工作進度: ${done}/${total} (${pct}%)</span>
+                            ${hasOverdue ? `<span class="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded animate-pulse shrink-0">⚠️ 有事項逾期未完</span>` : ''}
                         </div>
-                        <div class="space-y-3 mt-4">
-                            ${progressBarsHtml}
+                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
+                            <div class="h-full rounded-full ${hasOverdue?'bg-rose-500':'bg-indigo-600'}" style="width: ${pct}%"></div>
                         </div>
-                        ${staffSpecificHtml}
                     </div>
-                    <div class="border-t border-slate-100 pt-3 flex justify-between items-center mt-3">
-                        <span class="text-[10px] font-bold text-slate-400">專案代碼: ${camp.id.substring(5, 11).toUpperCase()}</span>
-                        <span class="text-[10px] font-bold text-indigo-700 flex items-center gap-0.5">進入管理 ➔</span>
+                    <div class="border-t border-slate-100 pt-2 flex justify-between items-center text-[10px] text-slate-400 font-bold mt-4">
+                        <span>🏷️ 客戶別: ${escapeHTML(getBrandFromCampaignName(camp.name))}</span>
+                        <span class="text-indigo-600">管理細項面板 ➔</span>
                     </div>
                 `;
-                container.appendChild(card);
+                grid.appendChild(card);
             });
         }
 
-        function renderCampaignDetails(active) {
+        // 自由定義專案面板細項渲染
+        function renderCampaignCampaignDetails(active) {
             if (!active) return;
-
-            document.getElementById('detail-campaign-title').textContent = active.name;
-            const badge = document.getElementById('detail-campaign-launch-badge');
-            if (active.launchDate) {
-                badge.className = "bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-bold px-3 py-1 rounded-full flex items-center gap-1";
-                badge.innerHTML = `🚀 上線日：${formatDateStringWithDay(active.launchDate)}`;
-                badge.onclick = null;
-            } else {
-                badge.className = "bg-amber-50 text-amber-700 border border-amber-200 text-sm font-bold px-3 py-1 rounded-full flex items-center gap-1 cursor-pointer hover:bg-amber-100 transition-all";
-                badge.innerHTML = `⚠️ 未設定上線日期 (點此編輯)`;
-                badge.onclick = () => triggerRenameActive();
-            }
-
-            const hasPlacement = active.includePlacement !== false;
-            const hasProduction = active.includeProduction !== false;
-            const tabContainer = document.getElementById('campaign-detail-tab-bar');
+            const grid = document.getElementById('detail-stages-grid'); grid.innerHTML = '';
             
-            if (hasPlacement && hasProduction) {
-                tabContainer.classList.remove('hidden');
-                document.getElementById('tab-placement').classList.remove('hidden');
-                document.getElementById('tab-production').classList.remove('hidden');
-            } else {
-                tabContainer.classList.add('hidden'); 
-                activeSubTab = hasPlacement ? 'placement' : 'production';
-            }
-
-            const activeBtn = document.getElementById('tab-' + activeSubTab);
-            const banner = document.getElementById('detail-progress-bar-container');
-            const bannerText = document.getElementById('detail-tab-banner-text');
-
-            if (activeSubTab === 'placement') {
-                if (activeBtn) activeBtn.className = "detail-tab flex-1 py-3 px-3 rounded-lg font-bold text-sm md:text-sm text-center transition-all duration-200 bg-indigo-50 text-indigo-700";
-                banner.className = "bg-indigo-50/50 rounded-xl px-4 py-3 border border-indigo-100 flex justify-between items-center text-sm";
-                bannerText.textContent = "🎯 投放時程與預算準確度把關 (排除週末假日)";
-            } else {
-                if (activeBtn) activeBtn.className = "detail-tab flex-1 py-3 px-3 rounded-lg font-bold text-sm md:text-sm text-center transition-all duration-200 bg-purple-50 text-purple-700";
-                banner.className = "bg-purple-50/50 rounded-xl px-4 py-3 border border-purple-100 flex justify-between items-center text-sm";
-                bannerText.textContent = "✍️ 外發媒體、KOL 合作與網頁產出審理 (排除週末假日)";
-            }
-
-            const currentPhaseStages = active.stages.filter(s => s.phase === activeSubTab);
-            let subChecked = 0, subTotal = 0;
-            currentPhaseStages.forEach(s => {
-                const list = s.items || [];
-                subTotal += list.length;
-                subChecked += list.filter(i => i.completed).length;
-            });
-            document.getElementById('detail-tab-progress-text').textContent = `${subChecked}/${subTotal} 細項完成 (${subTotal > 0 ? Math.round(subChecked/subTotal*100) : 0}%)`;
-
-            const gridContainer = document.getElementById('detail-stages-grid');
-            gridContainer.innerHTML = '';
-
-            if (currentPhaseStages.length === 0) {
-                gridContainer.innerHTML = `
-                    <div class="lg:col-span-2 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
-                        <p class="text-sm text-slate-400">此流程分類下暫無 any 執行階段。</p>
-                        <button onclick="openStageModal('add')" class="mt-3 text-sm bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg">➕ 新建第一個執行階段</button>
-                    </div>
-                `;
+            if (!active.stages || active.stages.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作小組/群組」開始規劃！</div>`;
                 return;
             }
 
-            currentPhaseStages.forEach(stage => {
-                const timelineStr = getStageTimelineText(stage, active.launchDate);
-                const allDone = stage.items.length > 0 && stage.items.every(it => it.completed);
-
-                const cardDiv = document.createElement('div');
-                let borderTheme = 'border-slate-100';
-                if (allDone) {
-                    borderTheme = stage.phase === 'placement' ? 'border-indigo-200 bg-indigo-50/15' : 'border-purple-200 bg-purple-50/15';
-                }
-                cardDiv.className = `bg-white rounded-2xl p-5 shadow-sm border ${borderTheme} flex flex-col justify-between transition-all duration-200`;
-                
-                let itemsHtml = '';
-                if (stage.items.length === 0) {
-                    itemsHtml = `<p class="text-sm text-slate-400 italic">暫無工作細項，請於下方新增。</p>`;
-                } else {
-                    stage.items.forEach(item => {
-                        if (!item.status) item.status = item.completed ? "已完成" : "未開始";
-                        if (!item.dueDate) item.dueDate = "";
-
-                        let statusSelectHtml = `
-                            <select onchange="changeItemStatus('${active.id}', '${stage.id}', '${item.id}', this.value)" class="text-xs font-bold border rounded px-1 py-0.5 focus:outline-none bg-white cursor-pointer shrink-0
-                                ${item.status === '未開始' ? 'text-slate-500 border-slate-300' : ''}
-                                ${item.status === '進行中' ? 'text-amber-600 border-amber-300 bg-amber-50/30' : ''}
-                                ${item.status === '已完成' ? 'text-emerald-600 border-emerald-300 bg-emerald-50/30' : ''}
-                            ">
-                                <option value="未開始" ${item.status === '未開始' ? 'selected' : ''}>⏳ 未開始</option>
-                                <option value="進行中" ${item.status === '進行中' ? 'selected' : ''}>⚡ 進行中</option>
-                                <option value="已完成" ${item.status === '已完成' ? 'selected' : ''}>✅ 已完成</option>
-                            </select>
-                        `;
-
-                        itemsHtml += `
-                            <div class="flex items-center justify-between gap-3 p-2 rounded-xl border border-slate-100 hover:border-indigo-100 hover:bg-slate-50/50 transition-all">
-                                <div class="flex items-center gap-2 min-w-0 flex-grow">
-                                    <input type="checkbox" ${item.completed ? 'checked' : ''} onclick="toggleItemCompletion('${active.id}', '${stage.id}', '${item.id}')" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0 cursor-pointer">
-                                    ${statusSelectHtml}
-                                    <div onclick="startInlineEdit('${stage.id}', '${item.id}', this)" class="text-sm leading-relaxed flex-grow min-w-0 cursor-text font-medium border border-transparent hover:border-slate-200 hover:bg-white rounded px-1 transition-all ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}" title="點選可直接編輯文字">
-                                        ${escapeHTML(item.text)}
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2 shrink-0">
-                                    <div onclick="startInlineDateEdit('${stage.id}', '${item.id}', this)" class="text-[11px] font-bold text-slate-500 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 px-2 py-0.5 rounded cursor-pointer border border-transparent hover:border-slate-300 transition-all select-none" title="點選自訂預計完成時間">
-                                        📅 ${item.dueDate ? item.dueDate : '預計完成日'}
-                                    </div>
-                                    <button onclick="deleteItem('${stage.id}', '${item.id}', event)" class="text-slate-300 hover:text-rose-500 font-bold text-base px-1" title="刪除本細項">&times;</button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-
-                cardDiv.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start mb-3 gap-2 flex-wrap">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-black px-2 py-0.5 rounded ${stage.phase === 'placement' ? 'text-indigo-600 bg-indigo-50' : 'text-purple-600 bg-purple-50'}">
-                                    👤 負責人: ${escapeHTML(stage.owner || '未指定')}
-                                </span>
-                            </div>
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <button onclick="toggleDateEdit('${stage.id}', event)" class="text-[10px] text-slate-500 font-bold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 px-2.5 py-1 rounded-full flex items-center gap-1 transition-all border border-slate-200/50">
-                                    <span>${timelineStr}</span>
-                                    <span>✏️ 走期</span>
-                                </button>
-                                <button onclick="openStageModal('edit', '${stage.id}')" class="p-1 bg-slate-50 hover:bg-slate-200 rounded border border-slate-200 text-sm text-slate-600 font-semibold" title="編輯此階段資訊">✏️ 編輯</button>
-                                <button onclick="deleteStage('${stage.id}', event)" class="p-1 bg-rose-50 hover:bg-rose-100 rounded border border-rose-200 text-sm text-rose-600 font-semibold" title="刪除此階段">🗑️ 刪除</button>
-                            </div>
-                        </div>
-
-                        <div id="date-edit-panel-${stage.id}" class="hidden my-3 p-3 bg-slate-50 border border-indigo-100 rounded-xl space-y-2.5">
-                            <span class="text-[11px] font-bold text-indigo-800 block">✏️ 調整本階段時程</span>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">開始日期：</label>
-                                    <input type="date" id="date-start-${stage.id}" class="w-full text-sm border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">結束日期：</label>
-                                    <input type="date" id="date-end-${stage.id}" class="w-full text-sm border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
-                                </div>
-                            </div>
-                            <div class="flex justify-end gap-1.5">
-                                <button onclick="resetStageDate('${stage.id}')" class="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1 font-bold rounded-md transition-all">還原預設</button>
-                                <button onclick="saveStageDate('${stage.id}')" class="text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 font-bold rounded-md transition-all">確認儲存</button>
-                            </div>
-                        </div>
-
-                        <h4 class="font-extrabold text-slate-800 mb-3 text-sm md:text-sm border-b border-slate-100 pb-1.5">${escapeHTML(stage.name)}</h4>
-                        <div class="space-y-2 mb-4">
-                            ${itemsHtml}
-                        </div>
-                    </div>
-
-                    <div class="mt-4 pt-3 border-t border-slate-100 space-y-3">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 mb-1">📝 進度備忘錄 (Note)：</label>
-                            <textarea id="note-${stage.id}" oninput="saveStageNote('${stage.id}', this.value)" placeholder="例：正在跟進對接進度中..." class="w-full text-sm border border-slate-200 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-50/50 min-h-[55px] resize-y">${escapeHTML(stage.note || '')}</textarea>
-                        </div>
-                        <div class="flex gap-1.5">
-                            <input type="text" id="input-${stage.id}" placeholder="追加客製任務..." class="flex-grow text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                            <button onclick="addCustomItem('${stage.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-1.5 rounded-lg transition-all shrink-0">新增</button>
-                        </div>
-                    </div>
-                `;
-                gridContainer.appendChild(cardDiv);
-
-                const el = document.getElementById(`input-${stage.id}`);
-                if (el) {
-                    el.addEventListener('keyup', function(e) {
-                        if (e.key === 'Enter') addCustomItem(stage.id);
-                    });
-                }
-            });
-        }
-
-        function renderKanban() {
-            renderAdminOwnerFilterPills();
-
-            const columns = {
-                todo: document.getElementById('kanban-todo'),
-                progress: document.getElementById('kanban-progress'),
-                done: document.getElementById('kanban-done')
-            };
-
-            Object.keys(columns).forEach(k => {
-                if (columns[k]) columns[k].innerHTML = '';
-            });
-
-            let counts = { todo: 0, progress: 0, done: 0 };
-
-            state.adminTasks.forEach(task => {
-                if (currentAdminOwnerFilter !== 'all') {
-                    const taskOwner = task.owner || '未指定';
-                    if (taskOwner !== currentAdminOwnerFilter) return;
-                }
-
-                const status = task.status || 'todo';
-                counts[status]++;
-
+            active.stages.forEach(stg => {
                 const card = document.createElement('div');
-                card.className = "bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80 flex flex-col justify-between gap-3 transition-all hover:shadow-md hover:border-slate-300";
+                card.className = "bg-white border border-slate-100 p-5 rounded-2xl shadow-sm flex flex-col justify-between";
                 
-                let catBg = 'bg-slate-100 text-slate-600';
-                if (task.category === '請款/報支') catBg = 'bg-rose-50 text-rose-700 border border-rose-100';
-                else if (task.category === '合約/簽核') catBg = 'bg-amber-50 text-amber-700 border border-amber-100';
-                else if (task.category === '日常例行') catBg = 'bg-indigo-50 text-indigo-700 border border-indigo-100';
-
-                let workflowControlsHtml = '';
-                if (status === 'todo') {
-                    workflowControlsHtml = `<button onclick="moveAdminTask('${task.id}', 'progress')" class="text-[9px] font-bold px-2 py-1 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded">執行 ➡️</button>`;
-                } else if (status === 'progress') {
-                    workflowControlsHtml = `
-                        <button onclick="moveAdminTask('${task.id}', 'todo')" class="text-[9px] font-bold px-2 py-1 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded">⬅️ 待辦</button>
-                        <button onclick="moveAdminTask('${task.id}', 'done')" class="text-[9px] font-bold px-2 py-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded">完成 ✅</button>
-                    `;
-                } else if (status === 'done') {
-                    workflowControlsHtml = `<button onclick="moveAdminTask('${task.id}', 'progress')" class="text-[9px] font-bold px-2 py-1 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded">↩️ 重啟</button>`;
+                let itHtml = '';
+                if (!stg.items || stg.items.length === 0) {
+                    itHtml = `<p class="text-xs text-slate-400 italic">暫無要做的事，請於下方追加。</p>`;
+                } else {
+                    stg.items.forEach(it => {
+                        const isOver = checkIsOverdue(it.dueDate, it.completed);
+                        itHtml += `
+                            <div class="flex items-center justify-between gap-2 p-2 border border-slate-50 hover:bg-slate-50 rounded-xl transition-all ${isOver?'bg-rose-50/60 border-rose-100':''}">
+                                <div class="flex items-center gap-2 min-w-0 flex-grow">
+                                    <input type="checkbox" ${it.completed?'checked':''} onclick="toggleItemCompletion('${stg.id}','${it.id}')" class="w-4 h-4 rounded text-indigo-600 cursor-pointer shrink-0">
+                                    <select onchange="changeItemStatusDirect('${stg.id}','${it.id}',this.value)" class="text-[11px] border rounded p-0.5 font-bold cursor-pointer ${it.status==='已完成'?'text-emerald-600 bg-emerald-50':it.status==='進行中'?'text-amber-600 bg-amber-50':'text-slate-500 bg-white'}">
+                                        <option value="未開始" ${it.status==='未開始'?'selected' : ''}>⏳ 未開始</option>
+                                        <option value="進行中" ${it.status==='進行中'?'selected' : ''}>⚡ 進行中</option>
+                                        <option value="已完成" ${it.status==='已完成'?'selected' : ''}>✅ 已完成</option>
+                                    </select>
+                                    <!-- 原地手動編輯文字 -->
+                                    <div onclick="startInlineEditItem('${stg.id}','${it.id}',this)" class="text-sm cursor-text flex-grow min-w-0 font-medium ${it.completed?'line-through text-slate-400':'text-slate-700'}">
+                                        ${escapeHTML(it.text)}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1.5 text-xs shrink-0 font-bold">
+                                    <!-- 原地編輯指派人 -->
+                                    <span onclick="startInlineOwnerEdit('${stg.id}','${it.id}',this)" class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded cursor-pointer hover:bg-indigo-50 hover:text-indigo-600">👤 ${escapeHTML(it.owner||'未指定')}</span>
+                                    <!-- 原地編輯交期 -->
+                                    <span onclick="startInlineDateEdit('${stg.id}','${it.id}',this)" class="px-1.5 py-0.5 rounded cursor-pointer select-none ${isOver?'bg-rose-600 text-white animate-pulse':'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}">
+                                        📅 ${it.dueDate ? it.dueDate : '設定交期'}
+                                    </span>
+                                    <button onclick="deleteItem('${stg.id}','${it.id}',event)" class="text-slate-300 hover:text-rose-600 px-1 font-black text-sm">&times;</button>
+                                </div>
+                            </div>
+                        `;
+                    });
                 }
 
                 card.innerHTML = `
                     <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${catBg}">${task.category}</span>
-                            <span class="text-[8px] text-slate-400 font-bold">📅 ${task.dueDate}</span>
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-100 mb-3">
+                            <h4 class="font-extrabold text-slate-800 text-sm">📁 ${escapeHTML(stg.name)} <span class="text-xs text-slate-400 font-normal">(群組主管: ${stg.owner})</span></h4>
+                            <div class="flex gap-1">
+                                <button onclick="openStageModal('edit','${stg.id}')" class="text-xs bg-slate-50 hover:bg-slate-100 border p-1 rounded font-bold text-slate-500">✏️</button>
+                                <button onclick="deleteStage('${stg.id}',event)" class="text-xs bg-rose-50 hover:bg-rose-100 border text-rose-600 p-1 rounded font-bold">&times;</button>
+                            </div>
                         </div>
-                        <p class="text-sm font-semibold text-slate-700 leading-relaxed">${escapeHTML(task.text)}</p>
-                        <div class="mt-2 text-[10px] font-bold text-slate-400">
-                            👤 負責人: <span class="text-slate-600 font-extrabold">${escapeHTML(task.owner || '未指定')}</span>
-                        </div>
+                        <div class="space-y-1.5 mb-4">${itHtml}</div>
                     </div>
-                    <div class="flex items-center justify-between border-t border-slate-100 pt-2 shrink-0">
-                        <button onclick="deleteAdminTask('${task.id}')" class="text-[10px] text-slate-300 hover:text-rose-500 transition-all font-bold">刪除</button>
-                        <div class="flex gap-1.5">
-                            ${workflowControlsHtml}
-                        </div>
+                    <div class="flex gap-1 pt-2 border-t border-slate-50">
+                        <input type="text" id="input-${stg.id}" placeholder="新增要做的事事項..." class="flex-grow text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 rounded-lg">追加</button>
                     </div>
                 `;
-                if (columns[status]) { columns[status].appendChild(card); }
+                grid.appendChild(card);
+                
+                const el = document.getElementById(`input-${stg.id}`);
+                if (el) el.onkeyup = (e) => { if (e.key === 'Enter') addCustomItem(stg.id); };
+            });
+        }
+
+        // 日常行政 Kanban 看板列表渲染 (優化：By 各家客戶別展示，顯示超期)
+        function renderKanban() {
+            const adminOwners = getAllAdminOwners();
+            const filterContainer = document.getElementById('admin-owner-filter-pills');
+            filterContainer.innerHTML = `<button onclick="currentAdminOwnerFilter='all';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminOwnerFilter==='all'?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部行政</button>`;
+            adminOwners.forEach(o => {
+                filterContainer.innerHTML += `<button onclick="currentAdminOwnerFilter='${o}';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminOwnerFilter===o?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${o}</button>`;
+            });
+
+            const cols = { todo: document.getElementById('kanban-todo'), progress: document.getElementById('kanban-progress'), done: document.getElementById('kanban-done') };
+            Object.keys(cols).forEach(k => cols[k].innerHTML = '');
+            let counts = { todo:0, progress:0, done:0 };
+
+            state.adminTasks.forEach(task => {
+                if (currentAdminOwnerFilter !== 'all' && task.owner !== currentAdminOwnerFilter) return;
+                const status = task.status || 'todo'; counts[status]++;
+                const isOver = checkIsOverdue(task.dueDate, status === 'done');
+
+                const card = document.createElement('div');
+                card.className = `bg-white p-3.5 rounded-xl shadow-sm border flex flex-col justify-between gap-2 transition-all hover:shadow-md ${isOver?'border-rose-300 bg-rose-50/10':'border-slate-200/80'}`;
+                
+                let workflowHtml = '';
+                if (status === 'todo') workflowHtml = `<button onclick="moveAdminTask('${task.id}', 'progress')" class="text-[9px] font-bold px-2 py-1 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded">執行 ➡️</button>`;
+                else if (status === 'progress') workflowHtml = `<button onclick="moveAdminTask('${task.id}', 'todo')" class="text-[9px] font-bold px-1.5 py-1 bg-slate-100 text-slate-500 rounded">待辦</button><button onclick="moveAdminTask('${task.id}', 'done')" class="text-[9px] font-bold px-2 py-1 bg-emerald-50 text-emerald-600 rounded">完成 ✅</button>`;
+                else if (status === 'done') workflowHtml = `<button onclick="moveAdminTask('${task.id}', 'progress')" class="text-[9px] font-bold px-2 py-1 bg-amber-50 text-amber-600 rounded">↩️ 重啟</button>`;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100/60">🏢 客戶別: ${escapeHTML(task.client||'通用')}</span>
+                            <span class="text-[9px] font-bold ${isOver?'text-white bg-rose-600 px-1.5 py-0.5 rounded animate-pulse':'text-slate-400'}">📅 ${task.dueDate}</span>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-700 leading-relaxed">${escapeHTML(task.text)}</p>
+                        <div class="text-[10px] text-slate-400 font-bold mt-1">🏷️ 分類: ${task.category} | 👤 負責人: ${escapeHTML(task.owner)}</div>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-100 pt-2 shrink-0 mt-2">
+                        <button onclick="deleteAdminTask('${task.id}')" class="text-[10px] text-slate-300 hover:text-rose-500 font-bold">刪除</button>
+                        <div class="flex gap-1">${workflowHtml}</div>
+                    </div>
+                `;
+                cols[status].appendChild(card);
             });
 
             document.getElementById('count-todo').textContent = counts.todo;
@@ -1822,66 +830,150 @@
             document.getElementById('count-done').textContent = counts.done;
         }
 
-        function renderNotices() {
-            const grid = document.getElementById('notices-grid');
-            grid.innerHTML = '';
+        // 新增：智能月行事曆渲染核心引擎
+        function renderIntelligenceCalendar() {
+            const container = document.getElementById('calendar-grid-body');
+            const titleEl = document.getElementById('calendar-month-year-title');
+            const ownerContainer = document.getElementById('calendar-owner-pills');
+            if (!container) return;
 
-            if (state.notices.length === 0) {
-                grid.innerHTML = `
-                    <div class="md:col-span-2 text-center py-12 bg-white rounded-2xl border border-slate-200">
-                        <p class="text-sm text-slate-400">目前公告欄空空如也，點擊右上方「新增公告」發布重要資訊吧！</p>
-                    </div>
-                `;
-                return;
+            // 1. 同仁快選名單渲染
+            const allStaff = getAllOwners();
+            ownerContainer.innerHTML = `<button onclick="currentCalendarOwnerFilter='all';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter==='all'?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">所有人</button>`;
+            allStaff.forEach(st => {
+                ownerContainer.innerHTML += `<button onclick="currentCalendarOwnerFilter='${st}';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter===st?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">${st}</button>`;
+            });
+
+            // 2. 計算行事曆日期天數
+            const year = calendarCurrentDate.getFullYear();
+            const month = calendarCurrentDate.getMonth();
+            titleEl.textContent = `${year} 年 ${String(month + 1).padStart(2, '0')} 月`;
+
+            container.innerHTML = '';
+            // 星期頭部
+            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            weekdays.forEach(w => {
+                const header = document.createElement('div');
+                header.className = "bg-slate-100 text-slate-500 p-2 text-center text-xs font-bold";
+                header.textContent = w;
+                container.appendChild(header);
+            });
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const totalDays = new Date(year, month + 1, 0).getDate();
+
+            // 補齊前置空格
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = "bg-slate-50 min-h-[100px]";
+                container.appendChild(emptyCell);
             }
 
+            // 收集所有交期事件大集合
+            let events = [];
+            // A. 抓取專案事項
+            state.campaigns.forEach(c => {
+                const brand = getBrandFromCampaignName(c.name);
+                c.stages.forEach(s => {
+                    (s.items || []).forEach(i => {
+                        if (currentCalendarOwnerFilter !== 'all' && i.owner !== currentCalendarOwnerFilter) return;
+                        if (!i.dueDate) return;
+                        // 轉換 MM/DD 為基準
+                        events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner, dateStr: i.dueDate, completed: i.completed });
+                    });
+                });
+            });
+            // B. 抓取行政事項
+            state.adminTasks.forEach(t => {
+                if (currentCalendarOwnerFilter !== 'all' && t.owner !== currentCalendarOwnerFilter) return;
+                if (!t.dueDate || t.dueDate === '無截止日') return;
+                events.push({ type: 'admin', brand: t.client, text: t.text, owner: t.owner, dateStr: t.dueDate, completed: t.status==='done' });
+            });
+
+            // 渲染日曆每日格子
+            for (let day = 1; day <= totalDays; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = "bg-white min-h-[110px] p-1 border-t border-slate-100 flex flex-col justify-between overflow-hidden hover:bg-slate-50/50";
+                
+                const curMMDD = `${String(month + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+                
+                // 日期數字標籤
+                const isToday = (new Date().getFullYear()===year && new Date().getMonth()===month && new Date().getDate()===day);
+                const numLabel = document.createElement('span');
+                numLabel.className = `text-xs font-black px-1.5 py-0.5 rounded-md self-start ${isToday?'bg-teal-600 text-white':'text-slate-400'}`;
+                numLabel.textContent = day;
+                dayCell.appendChild(numLabel);
+
+                // 塞入今日交期事項清單容器
+                const listContainer = document.createElement('div');
+                listContainer.className = "space-y-1 mt-1 flex-grow overflow-y-auto max-h-[85px] pr-0.5";
+
+                const dayEvents = events.filter(e => e.dateStr === curMMDD);
+                dayEvents.forEach(ev => {
+                    const evBox = document.createElement('div');
+                    const isOver = checkIsOverdue(ev.dateStr, ev.completed);
+                    
+                    evBox.className = `text-[10px] p-1 rounded border leading-tight line-clamp-2 select-none
+                        ${ev.completed?'bg-slate-100 text-slate-400 border-slate-200 line-through': isOver?'bg-rose-600 text-white border-rose-700 font-bold animate-pulse': ev.type==='admin'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-indigo-50 text-indigo-700 border-indigo-200'}
+                    `;
+                    evBox.innerHTML = `<strong>[${escapeHTML(ev.brand)}]</strong> ${escapeHTML(ev.text)} <span class="opacity-80">(${escapeHTML(ev.owner)})</span>`;
+                    listContainer.appendChild(evBox);
+                });
+
+                dayCell.appendChild(listContainer);
+                container.appendChild(dayCell);
+            }
+        }
+
+        function moveCalendarMonth(dir) {
+            calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + dir);
+            renderIntelligenceCalendar();
+        }
+
+        function renderUI() {
+            // 全局超期未完成加總控制
+            let overdueCount = 0;
+            state.campaigns.forEach(c => c.stages.forEach(s => (s.items||[]).forEach(i => { if (checkIsOverdue(i.dueDate, i.completed)) overdueCount++; })));
+            state.adminTasks.forEach(t => { if (checkIsOverdue(t.dueDate, t.status==='done')) overdueCount++; });
+            document.getElementById('global-overdue-tasks').textContent = overdueCount;
+
+            const active = getActiveCampaign();
+            if (currentGlobalView === 'dashboard') renderCampaignDashboard();
+            else if (currentGlobalView === 'campaign-detail') renderCampaignCampaignDetails(active);
+            else if (currentGlobalView === 'calendarview') renderIntelligenceCalendar();
+            else if (currentGlobalView === 'toolkit') renderNotices();
+            renderKanban();
+        }
+
+        function renderNotices() {
+            const grid = document.getElementById('notices-grid'); grid.innerHTML = '';
+            if (state.notices.length === 0) { grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 bg-white border rounded-2xl">暫無公告。</div>`; return; }
             state.notices.forEach(notice => {
                 const card = document.createElement('div');
-                card.className = "bg-white rounded-2xl p-5 shadow-sm border border-slate-200/70 flex flex-col justify-between hover:shadow-md transition-all";
-                
+                card.className = "bg-white rounded-2xl p-5 shadow-sm border border-slate-200/70 flex flex-col justify-between";
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start gap-2 mb-3">
                             <h3 class="font-extrabold text-slate-900 text-sm md:text-sm leading-snug">${escapeHTML(notice.title)}</h3>
-                            <div class="flex gap-1.5 shrink-0">
-                                <button onclick="openNoticeModal('edit', '${notice.id}')" class="text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-all">編輯</button>
-                                <button onclick="deleteNotice('${notice.id}', event)" class="text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition-all">刪除</button>
-                            </div>
+                            <div class="flex gap-1 shrink-0"><button onclick="deleteNotice('${notice.id}', event)" class="text-xs text-rose-600 bg-rose-50 px-2 py-1 rounded">刪除</button></div>
                         </div>
                         <p class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">${escapeHTML(notice.content)}</p>
                     </div>
-                    <div class="border-t border-slate-100 pt-3 mt-5 flex justify-between items-center text-[10px] text-slate-400 font-bold">
-                        <span>✍️ 發布人: ${escapeHTML(notice.author)}</span>
-                        <span>📅 日期: ${escapeHTML(notice.date)}</span>
+                    <div class="border-t border-slate-100 pt-2 mt-4 flex justify-between items-center text-[10px] text-slate-400 font-bold">
+                        <span>✍️ 發布: ${escapeHTML(notice.author)}</span><span>📅 ${escapeHTML(notice.date)}</span>
                     </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        function escapeHTML(str) {
-            if (!str) return '';
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag] || tag)
-            );
-        }
+        function escapeHTML(str) { if (!str) return ''; return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)); }
 
+        // 系統常規初始化加載
         window.onload = function() {
             loadStateFromStorage();
-            renderUI();
-
             const adminInput = document.getElementById('admin-task-input');
-            if (adminInput) {
-                adminInput.addEventListener('keyup', function(e) {
-                    if (e.key === 'Enter') addAdminTask();
-                });
-            }
+            if (adminInput) adminInput.onkeyup = (e) => { if (e.key === 'Enter') addAdminTask(); };
         };
     </script>
 </body>
