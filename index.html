@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
+    <!-- 核心雲端連線工具：Firebase & Firestore SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
@@ -33,11 +34,12 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
 
+    <!-- 頂部全局儀表板 -->
     <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 text-white shadow-lg border-b border-indigo-500/20">
         <div class="max-w-7xl mx-auto px-4 py-6 md:py-8 w-full">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <span class="bg-indigo-500/20 text-indigo-300 text-sm font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-400/30">Planner OS v8.5 (Calendar Integrated)</span>
+                    <span class="bg-indigo-500/20 text-indigo-300 text-sm font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-400/30">Planner OS v8.5 (Performance Optimized)</span>
                     <h1 class="text-2xl md:text-3xl font-extrabold mt-2 tracking-tight">團隊進度看板</h1>
                     <p class="text-slate-300 mt-1 text-sm">
                         記得時常更新專案進度唷🚀
@@ -57,6 +59,7 @@
         </div>
     </header>
 
+    <!-- 全局導覽列 -->
     <section class="bg-white border-b border-slate-200 py-1 shadow-sm sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex gap-2 overflow-x-auto py-2">
@@ -76,8 +79,10 @@
         </div>
     </section>
 
+    <!-- 主容器 -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
 
+        <!-- 視圖 1: 專案總覽看板 (首頁) -->
         <div id="view-dashboard" class="global-view block space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <div>
@@ -89,6 +94,7 @@
                 </button>
             </div>
 
+            <!-- 專案人員 + 品牌雙重篩選 -->
             <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-sm space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                     <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">👤 成員篩選：</span>
@@ -103,18 +109,21 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="campaign-grid"></div>
         </div>
 
+        <!-- 視圖: 團隊月行事曆單元 -->
         <div id="view-calendarview" class="global-view hidden space-y-6">
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 class="text-lg font-bold text-slate-900">📅 工作排期行事曆</h2>
                     <p class="text-sm text-slate-500 mt-0.5">匯集所有專案工作與行政任務的預計完成日。點擊同仁按鈕可快速過濾交期事項。</p>
                 </div>
+                <!-- 人員快選功能 -->
                 <div class="flex flex-wrap gap-1 items-center bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs">
                     <span class="font-bold text-slate-500 px-1">👤 人員快選:</span>
                     <div class="flex flex-wrap gap-1" id="calendar-owner-pills"></div>
                 </div>
             </div>
 
+            <!-- 月份切換與日曆主體 -->
             <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
                 <div class="flex items-center justify-between">
                     <button onclick="moveCalendarMonth(-1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold transition-all">◀ 上個月</button>
@@ -122,11 +131,11 @@
                     <button onclick="moveCalendarMonth(1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold transition-all">下個月 ▶</button>
                 </div>
 
-                <div class="grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200" id="calendar-grid-body">
-                    </div>
+                <div class="grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200" id="calendar-grid-body"></div>
             </div>
         </div>
 
+        <!-- 視圖 2: 專案詳情頁 -->
         <div id="view-campaign-detail" class="global-view hidden space-y-6">
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-start gap-3.5">
@@ -135,9 +144,9 @@
                     </button>
                     <div>
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded">專案工作面板</span>
+                            <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded">專案控制台</span>
                             <h2 class="text-lg md:text-xl font-extrabold text-slate-900" id="detail-campaign-title">載入中...</h2>
-                            <span id="detail-campaign-launch-badge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"></span>
+                            <span id="detail-campaign-launch-badge" class="text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"></span>
                         </div>
                         <p class="text-sm text-slate-500 mt-1">此處完全由使用者自由定義工作小組與流程，直接點擊「工作標題」與「預計完成日」即可原地直接編輯更新。</p>
                     </div>
@@ -155,16 +164,20 @@
                 </div>
             </div>
 
+            <!-- 自由任務群組網格 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="detail-stages-grid"></div>
         </div>
 
+        <!-- 視圖 3: 日常行政看板 -->
         <div id="view-adminboard" class="global-view hidden space-y-6">
+            <!-- 日常行政同仁點選過濾 -->
             <div class="flex flex-col sm:flex-row sm:items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-sm">
                 <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0">👤 成員快選過濾：</span>
                 <div class="flex flex-wrap gap-1.5" id="admin-owner-filter-pills"></div>
             </div>
 
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 行政任務輸入區 -->
                 <div class="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-slate-100 pb-6 lg:pb-0 lg:pr-6 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center gap-2.5">
@@ -203,6 +216,7 @@
                     </div>
                 </div>
 
+                <!-- 行政 Kanban 欄位 -->
                 <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-100 flex flex-col h-[520px]">
                         <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
@@ -240,6 +254,7 @@
             </div>
         </div>
 
+        <!-- 視圖 4: 團隊公告欄 -->
         <div id="view-toolkit" class="global-view hidden space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <div>
@@ -255,16 +270,17 @@
 
     </main>
 
+    <!-- 彈窗群組 -->
     <div id="campaign-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-md">
-            <h3 class="font-bold text-slate-900 text-sm mb-4" id="modal-title">建立行銷專案 Campaign</h3>
+            <h3 class="font-bold text-slate-900 text-sm mb-4" id="modal-title">管理行銷專案 Campaign</h3>
             <div class="space-y-4">
                 <div>
                     <label class="text-sm font-bold text-slate-500 block mb-1">專案名稱 (規格建議：客戶品牌_月份_活動描述)</label>
                     <input type="text" id="campaign-name-input" placeholder="例：合利他命_0701_紅轉藍銜接" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">Campaign上線日期</label>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">Campaign上線日</label>
                     <input type="date" id="campaign-launch-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
@@ -284,7 +300,7 @@
                     <input type="text" id="stage-name-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">小組主負責人 (選填)</label>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">小組主負責人</label>
                     <input type="text" id="stage-owner-input" placeholder="例：vivian" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
@@ -325,6 +341,7 @@
         </div>
     </div>
 
+    <!-- 即時提示通知 -->
     <div id="toast-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-sm text-center">
             <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl mx-auto mb-3" id="toast-icon">⚠️</div>
@@ -335,14 +352,14 @@
     </div>
 
     <script>
-        // 1. 初始化資料庫定義
+        // 初始化資料庫定義
         let state = { campaigns: [], adminTasks: [], notices: [] };
         let currentOwnerFilter = 'all';
         let currentBrandFilter = 'all'; 
         let currentAdminOwnerFilter = 'all'; 
-        let currentCalendarOwnerFilter = 'all'; // 行事曆同仁快選控制變數
+        let currentCalendarOwnerFilter = 'all'; 
 
-        // 智能行事曆用時間變數
+        // 智能行事曆時間變數
         let calendarCurrentDate = new Date(); 
 
         let currentModalMode = 'add';
@@ -352,36 +369,24 @@
         let activeNoticeIdInModal = '';
         let currentGlobalView = 'dashboard';
 
-        // 輔助函式：取得今日日期字串 YYYY-MM-DD 供過期比對
         function getTodayString() {
             const now = new Date();
-            const y = now.getFullYear();
-            const m = String(now.getMonth() + 1).padStart(2, '0');
-            const d = String(now.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         }
 
-        // 比對是否過期 (如果是 YYYY-MM-DD 或 MM/DD 格式)
         function checkIsOverdue(dateStr, isCompleted) {
             if (isCompleted || !dateStr || dateStr === '無截止日' || dateStr === '設定交期' || dateStr === '預計完成日') return false;
             let targetDate;
-            if (dateStr.includes('-')) {
-                targetDate = new Date(dateStr);
-            } else if (dateStr.includes('/')) {
+            if (dateStr.includes('-')) { targetDate = new Date(dateStr); } 
+            else if (dateStr.includes('/')) {
                 const parts = dateStr.split('/');
-                const year = new Date().getFullYear();
-                targetDate = new Date(year, parseInt(parts[0]) - 1, parseInt(parts[1]));
-            } else {
-                return false;
-            }
+                targetDate = new Date(new Date().getFullYear(), parseInt(parts[0]) - 1, parseInt(parts[1]));
+            } else { return false; }
             if (isNaN(targetDate.getTime())) return false;
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            targetDate.setHours(0,0,0,0);
+            const today = new Date(); today.setHours(0,0,0,0); targetDate.setHours(0,0,0,0);
             return targetDate < today;
         }
 
-        // 解析品牌客戶別
         function getBrandFromCampaignName(name) {
             if (!name) return '其他';
             return name.includes('_') ? name.split('_')[0].trim() : '其他';
@@ -389,9 +394,7 @@
 
         function getAllBrands() {
             const brands = new Set();
-            if (state.campaigns) {
-                state.campaigns.forEach(c => brands.add(getBrandFromCampaignName(c.name)));
-            }
+            if (state.campaigns) state.campaigns.forEach(c => brands.add(getBrandFromCampaignName(c.name)));
             return Array.from(brands);
         }
 
@@ -403,27 +406,21 @@
                         camp.stages.forEach(stage => {
                             if (stage.owner && stage.owner !== '未指定' && stage.owner.trim() !== '') owners.add(stage.owner.trim());
                             if (stage.items) {
-                                stage.items.forEach(it => {
-                                    if (it.owner && it.owner !== '未指定' && it.owner.trim() !== '') owners.add(it.owner.trim());
-                                });
+                                stage.items.forEach(it => { if (it.owner && it.owner !== '未指定' && it.owner.trim() !== '') owners.add(it.owner.trim()); });
                             }
                         });
                     }
                 });
             }
             if (state.adminTasks) {
-                state.adminTasks.forEach(task => {
-                    if (task.owner && task.owner !== '未指定' && task.owner.trim() !== '') owners.add(task.owner.trim());
-                });
+                state.adminTasks.forEach(task => { if (task.owner && task.owner !== '未指定' && task.owner.trim() !== '') owners.add(task.owner.trim()); });
             }
             return Array.from(owners);
         }
 
-        function getAllAdminOwners() {
-            return getAllOwners();
-        }
+        function getAllAdminOwners() { return getAllOwners(); }
 
-        // 全局核心讀取寫入 (雲端 Firestore)
+        // 雲端 Firestore 連線控制
         function saveStateToStorage() {
             localStorage.setItem('mediaPlannerMultiStateV8_5', JSON.stringify(state));
             db.collection('global').doc('planner_config').set(state).catch(e => console.error("雲端失敗:", e));
@@ -436,12 +433,7 @@
                     if (!state.campaigns) state.campaigns = [];
                     if (!state.adminTasks) state.adminTasks = [];
                     if (!state.notices) state.notices = [];
-                    
-                    // 防呆升級：確保以前被結構化過濾的舊專案資料不會因為找不到 stages 陣列而造成網網頁卡死
-                    state.campaigns.forEach(c => {
-                        if (!c.stages) c.stages = [];
-                    });
-                    
+                    state.campaigns.forEach(c => { if (!c.stages) c.stages = []; });
                     renderUI();
                 } else {
                     resetAll();
@@ -449,7 +441,7 @@
             });
         }
 
-        // 頁面視圖控制切換
+        // 核心導覽控制 (優化：效能分流，只有點行事曆才進行高耗能運算重繪)
         function changeGlobalView(viewName) {
             currentGlobalView = viewName;
             document.querySelectorAll('.global-view').forEach(el => { el.classList.add('hidden'); el.classList.remove('block'); });
@@ -474,20 +466,14 @@
             return state.campaigns.find(c => c.id === state.activeCampaignId) || state.campaigns[0];
         }
 
-        // 專案彈窗核心控制
         function openCampaignModal(mode) {
             currentModalMode = mode;
             const input = document.getElementById('campaign-name-input');
             const dateInput = document.getElementById('campaign-launch-input');
-            if (mode === 'add') { 
-                input.value = ''; 
-                dateInput.value = '';
-            } else { 
+            if (mode === 'add') { input.value = ''; dateInput.value = ''; } 
+            else {
                 const active = getActiveCampaign(); 
-                if (active) {
-                    input.value = active.name;
-                    dateInput.value = active.launchDate || '';
-                }
+                if (active) { input.value = active.name; dateInput.value = active.launchDate || ''; }
             }
             document.getElementById('campaign-modal').classList.remove('hidden');
             input.focus();
@@ -504,10 +490,7 @@
                 closeCampaignModal(); saveStateToStorage(); enterCampaignDetail(newId);
             } else {
                 const active = getActiveCampaign();
-                if (active) {
-                    active.name = nameText;
-                    active.launchDate = launchDateVal;
-                }
+                if (active) { active.name = nameText; active.launchDate = launchDateVal; }
                 closeCampaignModal(); saveStateToStorage(); renderUI();
             }
         }
@@ -516,27 +499,31 @@
             const active = getActiveCampaign(); if (!active) return;
             triggerCustomAlert("確認刪除專案", `確定要完全刪除專案「${active.name}」嗎？`, true, () => {
                 state.campaigns = state.campaigns.filter(c => c.id !== active.id);
-                saveStateToStorage();
-                changeGlobalView('dashboard');
+                saveStateToStorage(); changeGlobalView('dashboard');
             });
         }
         function triggerDeleteFromDashboard(id, e) {
             e.stopPropagation();
             triggerCustomAlert("確認刪除專案", "確定要刪除此行銷專案項目嗎？", true, () => {
-                state.campaigns = state.campaigns.filter(c => c.id !== id);
-                saveStateToStorage();
+                state.campaigns = state.campaigns.filter(c => c.id !== id); saveStateToStorage();
             });
         }
 
-        // 群組階段群組控制器
+        function saveStageNote(stageId, textValue) {
+            const active = getActiveCampaign();
+            if (active) {
+                const stage = active.stages.find(s => s.id === stageId);
+                if (stage) { stage.note = textValue; saveStateToStorage(); }
+            }
+        }
+
         function openStageModal(mode, id='') {
             currentStageModalMode = mode; activeStageIdInModal = id;
             const nameIn = document.getElementById('stage-name-input');
             const ownerIn = document.getElementById('stage-owner-input');
             if (mode === 'add') { nameIn.value = ''; ownerIn.value = ''; } 
             else {
-                const active = getActiveCampaign();
-                const stg = active.stages.find(s => s.id === id);
+                const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === id);
                 if (stg) { nameIn.value = stg.name; ownerIn.value = stg.owner || ''; }
             }
             document.getElementById('stage-modal').classList.remove('hidden');
@@ -559,18 +546,14 @@
         function deleteStage(stgId, e) {
             e.stopPropagation();
             triggerCustomAlert("確認刪除群組", "將一併刪除群組內的工作事項喔！", true, () => {
-                const active = getActiveCampaign();
-                active.stages = active.stages.filter(s => s.id !== stgId);
-                saveStateToStorage();
+                const active = getActiveCampaign(); active.stages = active.stages.filter(s => s.id !== stgId); saveStateToStorage();
             });
         }
 
-        // 事項新增與打勾與自訂原地修改
         function addCustomItem(stgId) {
             const input = document.getElementById(`input-${stgId}`);
             const text = input.value.trim(); if (!text) return;
-            const active = getActiveCampaign();
-            const stg = active.stages.find(s => s.id === stgId);
+            const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === stgId);
             if (stg) {
                 if (!stg.items) stg.items = [];
                 stg.items.push({ id: 'item_' + Date.now() + Math.random().toString(36).substr(2,3), text: text, status: "未開始", owner: stg.owner || "未指定", dueDate: "", completed: false });
@@ -578,69 +561,46 @@
             }
         }
         function toggleItemCompletion(stgId, itemId) {
-            const active = getActiveCampaign();
-            const stg = active.stages.find(s => s.id === stgId);
-            const it = stg.items.find(i => i.id === itemId);
-            if (it) {
-                it.completed = !it.completed;
-                it.status = it.completed ? "已完成" : "進行中";
-                saveStateToStorage(); renderUI();
-            }
+            const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === stgId); const it = stg.items.find(i => i.id === itemId);
+            if (it) { it.completed = !it.completed; it.status = it.completed ? "已完成" : "進行中"; saveStateToStorage(); renderUI(); }
         }
         function changeItemStatusDirect(stgId, itemId, status) {
-            const active = getActiveCampaign();
-            const stg = active.stages.find(s => s.id === stgId);
-            const it = stg.items.find(i => i.id === itemId);
-            if (it) {
-                it.status = status;
-                it.completed = (status === "已完成");
-                saveStateToStorage(); renderUI();
-            }
+            const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === stgId); const it = stg.items.find(i => i.id === itemId);
+            if (it) { it.status = status; it.completed = (status === "已完成"); saveStateToStorage(); renderUI(); }
         }
         function deleteItem(stgId, itemId, e) {
             e.stopPropagation();
             triggerCustomAlert("刪除事項", "確定刪除此事項？", true, () => {
-                const active = getActiveCampaign();
-                const stg = active.stages.find(s => s.id === stgId);
-                stg.items = stg.items.filter(i => i.id !== itemId);
-                saveStateToStorage();
+                const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === stgId);
+                stg.items = stg.items.filter(i => i.id !== itemId); saveStateToStorage();
             });
         }
 
-        // 原地直接編輯工作分配
         function startInlineEditItem(stgId, itemId, el) {
             if (el.querySelector('input')) return;
-            const active = getActiveCampaign();
-            const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
-            const cur = it.text;
-            el.innerHTML = `<input type="text" class="w-full border border-indigo-400 rounded px-1" value="${escapeHTML(cur)}">`;
+            const active = getActiveCampaign(); const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
+            el.innerHTML = `<input type="text" class="w-full border border-indigo-400 rounded px-1" value="${escapeHTML(it.text)}">`;
             const inp = el.querySelector('input'); inp.focus(); inp.select();
             const save = () => { if (inp.value.trim()) { it.text = inp.value.trim(); saveStateToStorage(); } renderUI(); };
-            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); };
-            inp.onblur = save;
+            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); }; inp.onblur = save;
         }
         function startInlineOwnerEdit(stgId, itemId, el) {
             if (el.querySelector('input')) return;
-            const active = getActiveCampaign();
-            const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
+            const active = getActiveCampaign(); const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
             el.innerHTML = `<input type="text" class="w-16 border border-indigo-400 rounded text-center text-xs" value="${escapeHTML(it.owner||'')}">`;
             const inp = el.querySelector('input'); inp.focus();
             const save = () => { it.owner = inp.value.trim() || '未指定'; saveStateToStorage(); renderUI(); };
-            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); };
-            inp.onblur = save;
+            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); }; inp.onblur = save;
         }
         function startInlineDateEdit(stgId, itemId, el) {
             if (el.querySelector('input')) return;
-            const active = getActiveCampaign();
-            const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
+            const active = getActiveCampaign(); const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
             el.innerHTML = `<input type="text" placeholder="MM/DD" class="w-16 border border-indigo-400 rounded text-center text-xs" value="${escapeHTML(it.dueDate||'')}">`;
             const inp = el.querySelector('input'); inp.focus();
             const save = () => { it.dueDate = inp.value.trim(); saveStateToStorage(); renderUI(); };
-            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); };
-            inp.onblur = save;
+            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); }; inp.onblur = save;
         }
 
-        // 日常行政模組控制 (優化：By 客戶區隔、支援截止完成日)
         function addAdminTask() {
             const input = document.getElementById('admin-task-input');
             const categorySelect = document.getElementById('admin-task-category');
@@ -648,48 +608,19 @@
             const ownerInput = document.getElementById('admin-task-owner-input');
             const dateInput = document.getElementById('admin-task-date');
 
-            const text = input.value.trim();
-            const clientText = clientInput.value.trim() || '通用行政';
-            const ownerText = ownerInput.value.trim() || '未指定';
+            const text = input.value.trim(); const clientText = clientInput.value.trim() || '通用行政'; const ownerText = ownerInput.value.trim() || '未指定';
             if (!text) return;
 
             let dDisplay = "無截止日";
-            if (dateInput.value) {
-                const p = dateInput.value.split('-');
-                dDisplay = `${p[1]}/${p[2]}`;
-            }
+            if (dateInput.value) { const p = dateInput.value.split('-'); dDisplay = `${p[1]}/${p[2]}`; }
 
             state.adminTasks.push({
-                id: 'admin_' + Date.now(),
-                text: text,
-                category: categorySelect.value,
-                client: clientText,
-                owner: ownerText,
-                dueDate: dDisplay,
-                rawDate: dateInput.value, 
-                status: 'todo'
+                id: 'admin_' + Date.now(), text: text, category: categorySelect.value, client: clientText, owner: ownerText, dueDate: dDisplay, rawDate: dateInput.value, status: 'todo'
             });
             input.value = ''; clientInput.value = ''; ownerInput.value = ''; dateInput.value = '';
             saveStateToStorage();
         }
 
-        function moveAdminTask(taskId, nextStatus) {
-            const task = state.adminTasks.find(t => t.id === taskId);
-            if (task) {
-                task.status = nextStatus;
-                saveStateToStorage();
-                renderUI();
-            }
-        }
-
-        // 修正：修正修復行政任務刪除邏輯
-        function deleteAdminTask(taskId) {
-            state.adminTasks = state.adminTasks.filter(t => t.id !== taskId);
-            saveStateToStorage();
-            renderUI();
-        }
-
-        // 渲染各區塊看板數據一覽
         function renderCampaignDashboard() {
             const oContainer = document.getElementById('owner-filter-pills');
             const bContainer = document.getElementById('brand-filter-pills');
@@ -712,20 +643,12 @@
             fcamps.forEach(camp => {
                 let total = 0, done = 0, hasOverdue = false;
                 (camp.stages || []).forEach(s => {
-                    (s.items || []).forEach(i => {
-                        total++; if (i.completed) done++;
-                        if (checkIsOverdue(i.dueDate, i.completed)) hasOverdue = true;
-                    });
+                    (s.items || []).forEach(i => { total++; if (i.completed) done++; if (checkIsOverdue(i.dueDate, i.completed)) hasOverdue = true; });
                 });
                 const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-                // 修正：重新支援並完美展現預計上線日標籤
-                let launchText = '⚠️ 未設定上線日期';
-                let launchBadgeClass = 'bg-slate-100 text-slate-500';
-                if (camp.launchDate) {
-                    launchText = `🚀 上線日：${formatDateStringWithDay(camp.launchDate)}`;
-                    launchBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200/60';
-                }
+                let launchText = '⚠️ 未設定上線日期'; let launchBadgeClass = 'bg-slate-100 text-slate-500';
+                if (camp.launchDate) { launchText = `🚀 上線日：${formatDateStringWithDay(camp.launchDate)}`; launchBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'; }
 
                 const card = document.createElement('div');
                 card.className = `bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border transition-all cursor-pointer flex flex-col justify-between min-h-[200px] ${hasOverdue?'border-rose-300 bg-rose-50/10 hover:border-rose-400': 'border-slate-200/80 hover:border-indigo-200'}`;
@@ -736,23 +659,14 @@
                             <h3 class="font-bold text-slate-900 text-base md:text-lg">${escapeHTML(camp.name)}</h3>
                             <button onclick="triggerDeleteFromDashboard('${camp.id}', event)" class="text-slate-300 hover:text-rose-600 font-bold text-lg px-1">&times;</button>
                         </div>
-                        <div class="my-2.5">
-                            <span class="text-xs font-bold px-2 py-1 rounded-md ${launchBadgeClass}">
-                                ${launchText}
-                            </span>
-                        </div>
+                        <div class="my-2.5"><span class="text-xs font-bold px-2 py-1 rounded-md ${launchBadgeClass}">${launchText}</span></div>
                         <div class="mt-2 flex items-center justify-between">
                             <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">📊 工作進度: ${done}/${total} (${pct}%)</span>
                             ${hasOverdue ? `<span class="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded animate-pulse shrink-0">⚠️ 有事項逾期未完</span>` : ''}
                         </div>
-                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
-                            <div class="h-full rounded-full ${hasOverdue?'bg-rose-500':'bg-indigo-600'}" style="width: ${pct}%"></div>
-                        </div>
+                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2"><div class="h-full rounded-full ${hasOverdue?'bg-rose-500':'bg-indigo-600'}" style="width: ${pct}%"></div></div>
                     </div>
-                    <div class="border-t border-slate-100 pt-2 flex justify-between items-center text-[10px] text-slate-400 font-bold mt-4">
-                        <span>🏷️ 客戶別: ${escapeHTML(getBrandFromCampaignName(camp.name))}</span>
-                        <span class="text-indigo-600">管理細項面板 ➔</span>
-                    </div>
+                    <div class="border-t border-slate-100 pt-2 flex justify-between items-center text-[10px] text-slate-400 font-bold mt-4"><span>🏷️ 客戶別: ${escapeHTML(getBrandFromCampaignName(camp.name))}</span><span class="text-indigo-600">管理細項面板 ➔</span></div>
                 `;
                 grid.appendChild(card);
             });
@@ -760,7 +674,6 @@
 
         function renderCampaignCampaignDetails(active) {
             if (!active) return;
-            
             document.getElementById('detail-campaign-title').textContent = active.name;
             const badge = document.getElementById('detail-campaign-launch-badge');
             if (active.launchDate) {
@@ -773,8 +686,7 @@
 
             const grid = document.getElementById('detail-stages-grid'); grid.innerHTML = '';
             if (!active.stages || active.stages.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作小組/群組」開始規劃！</div>`;
-                return;
+                grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作小組/群組」開始規劃！</div>`; return;
             }
 
             active.stages.forEach(stg => {
@@ -782,29 +694,24 @@
                 card.className = "bg-white border border-slate-100 p-5 rounded-2xl shadow-sm flex flex-col justify-between";
                 
                 let itHtml = '';
-                if (!stg.items || stg.items.length === 0) {
-                    itHtml = `<p class="text-xs text-slate-400 italic">暫無要做的事，請於下方新增。</p>`;
-                } else {
+                if (!stg.items || stg.items.length === 0) { itHtml = `<p class="text-xs text-slate-400 italic">暫無要做的事，請於下方新增。</p>`; } 
+                else {
                     stg.items.forEach(it => {
                         const isOver = checkIsOverdue(it.dueDate, it.completed);
                         itHtml += `
                             <div class="flex items-center justify-between gap-2 p-2 border border-slate-50 hover:bg-slate-50 rounded-xl transition-all ${isOver?'bg-rose-50/60 border-rose-100':''}">
                                 <div class="flex items-center gap-2 min-w-0 flex-grow">
-                                    <input type="checkbox" ${it.completed?'checked':''} onclick="toggleItemCompletion('${stg.id}','${it.id}')" class="w-4 h-4 rounded border-slate-300 text-indigo-600 cursor-pointer shrink-0">
+                                    <input type="checkbox" ${it.completed?'checked':''} onclick="toggleItemCompletion('${stg.id}','${it.id}')" class="w-4 h-4 rounded text-indigo-600 cursor-pointer shrink-0">
                                     <select onchange="changeItemStatusDirect('${stg.id}','${it.id}',this.value)" class="text-[11px] border rounded p-0.5 font-bold cursor-pointer ${it.status==='已完成'?'text-emerald-600 bg-emerald-50':it.status==='進行中'?'text-amber-600 bg-amber-50':'text-slate-500 bg-white'}">
                                         <option value="未開始" ${it.status==='未開始'?'selected' : ''}>⏳ 未開始</option>
                                         <option value="進行中" ${it.status==='進行中'?'selected' : ''}>⚡ 進行中</option>
                                         <option value="已完成" ${it.status==='已完成'?'selected' : ''}>✅ 已完成</option>
                                     </select>
-                                    <div onclick="startInlineEditItem('${stg.id}','${it.id}',this)" class="text-sm cursor-text flex-grow min-w-0 font-medium ${it.completed?'line-through text-slate-400':'text-slate-700'}">
-                                        ${escapeHTML(it.text)}
-                                    </div>
+                                    <div onclick="startInlineEditItem('${stg.id}','${it.id}',this)" class="text-sm cursor-text flex-grow min-w-0 font-medium ${it.completed?'line-through text-slate-400':'text-slate-700'}">${escapeHTML(it.text)}</div>
                                 </div>
                                 <div class="flex items-center gap-1.5 text-xs shrink-0 font-bold">
                                     <span onclick="startInlineOwnerEdit('${stg.id}','${it.id}',this)" class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded cursor-pointer hover:bg-indigo-50 hover:text-indigo-700">👤 ${escapeHTML(it.owner||'未指定')}</span>
-                                    <span onclick="startInlineDateEdit('${stg.id}','${it.id}',this)" class="px-1.5 py-0.5 rounded cursor-pointer select-none ${isOver?'bg-rose-600 text-white animate-pulse':'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}">
-                                        📅 ${it.dueDate ? it.dueDate : '設定交期'}
-                                    </span>
+                                    <span onclick="startInlineDateEdit('${stg.id}','${it.id}',this)" class="px-1.5 py-0.5 rounded cursor-pointer select-none ${isOver?'bg-rose-600 text-white animate-pulse':'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}">📅 ${it.dueDate ? it.dueDate : '設定交期'}</span>
                                     <button onclick="deleteItem('${stg.id}','${it.id}',event)" class="text-slate-300 hover:text-rose-600 px-1 font-black text-sm">&times;</button>
                                 </div>
                             </div>
@@ -829,9 +736,7 @@
                     </div>
                 `;
                 grid.appendChild(card);
-                
-                const el = document.getElementById(`input-${stg.id}`);
-                if (el) el.onkeyup = (e) => { if (e.key === 'Enter') addCustomItem(stg.id); };
+                const el = document.getElementById(`input-${stg.id}`); if (el) el.onkeyup = (e) => { if (e.key === 'Enter') addCustomItem(stg.id); };
             });
         }
 
@@ -840,24 +745,20 @@
             const filterContainer = document.getElementById('admin-owner-filter-pills');
             if (filterContainer) {
                 filterContainer.innerHTML = `<button onclick="currentAdminOwnerFilter='all';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminOwnerFilter==='all'?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部行政</button>`;
-                adminOwners.forEach(o => {
-                    filterContainer.innerHTML += `<button onclick="currentAdminOwnerFilter='${o}';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminOwnerFilter===o?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${o}</button>`;
-                });
+                adminOwners.forEach(o => { filterContainer.innerHTML += `<button onclick="currentAdminOwnerFilter='${o}';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminOwnerFilter===o?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${o}</button>`; });
             }
 
             const cols = { todo: document.getElementById('kanban-todo'), progress: document.getElementById('kanban-progress'), done: document.getElementById('kanban-done') };
             if (!cols.todo) return;
             
-            Object.keys(cols).forEach(k => cols[k].innerHTML = '');
-            let counts = { todo:0, progress:0, done:0 };
+            Object.keys(cols).forEach(k => cols[k].innerHTML = ''); let counts = { todo:0, progress:0, done:0 };
 
             state.adminTasks.forEach(task => {
                 if (currentAdminOwnerFilter !== 'all' && task.owner !== currentAdminOwnerFilter) return;
-                const status = task.status || 'todo'; counts[status]++;
-                const isOver = checkIsOverdue(task.dueDate, status === 'done');
+                const status = task.status || 'todo'; counts[status]++; const isOver = checkIsOverdue(task.dueDate, status === 'done');
 
                 const card = document.createElement('div');
-                card.className = `bg-white p-3.5 rounded-xl shadow-sm border flex flex-col justify-between gap-2 transition-all hover:shadow-md ${isOver?'border-rose-300 bg-rose-50/10':'border-slate-200/80'}`;
+                card.className = `bg-white p-3.5 rounded-xl shadow-sm border flex flex-col justify-between gap-3 transition-all hover:shadow-md ${isOver?'border-rose-300 bg-rose-50/10':'border-slate-200/80'}`;
                 
                 let workflowHtml = '';
                 if (status === 'todo') workflowHtml = `<button onclick="moveAdminTask('${task.id}', 'progress')" class="text-[9px] font-bold px-2 py-1 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded">執行 ➡️</button>`;
@@ -880,106 +781,70 @@
                 `;
                 cols[status].appendChild(card);
             });
-
-            document.getElementById('count-todo').textContent = counts.todo;
-            document.getElementById('count-progress').textContent = counts.progress;
-            document.getElementById('count-done').textContent = counts.done;
+            document.getElementById('count-todo').textContent = counts.todo; document.getElementById('count-progress').textContent = counts.progress; document.getElementById('count-done').textContent = counts.done;
         }
 
+        // 智能月行事曆優化：只有在此單元被呼叫時，才執行高負載重新渲染
         function renderIntelligenceCalendar() {
-            const container = document.getElementById('calendar-grid-body');
-            const titleEl = document.getElementById('calendar-month-year-title');
-            const ownerContainer = document.getElementById('calendar-owner-pills');
-            if (!container || !titleEl || !ownerContainer) return;
+            const container = document.getElementById('calendar-grid-body'); if (!container) return;
+            const titleEl = document.getElementById('calendar-month-year-title'); const ownerContainer = document.getElementById('calendar-owner-pills');
 
             const allStaff = getAllOwners();
             ownerContainer.innerHTML = `<button onclick="currentCalendarOwnerFilter='all';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter==='all'?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">所有人</button>`;
-            allStaff.forEach(st => {
-                ownerContainer.innerHTML += `<button onclick="currentCalendarOwnerFilter='${st}';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter===st?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">${st}</button>`;
-            });
+            allStaff.forEach(st => { ownerContainer.innerHTML += `<button onclick="currentCalendarOwnerFilter='${st}';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter===st?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">${st}</button>`; });
 
-            const year = calendarCurrentDate.getFullYear();
-            const month = calendarCurrentDate.getMonth();
+            const year = calendarCurrentDate.getFullYear(); const month = calendarCurrentDate.getMonth();
             titleEl.textContent = `${year} 年 ${String(month + 1).padStart(2, '0')} 月`;
 
             container.innerHTML = '';
             const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-            weekdays.forEach(w => {
-                const header = document.createElement('div');
-                header.className = "bg-slate-100 text-slate-500 p-2 text-center text-xs font-bold";
-                header.textContent = w;
-                container.appendChild(header);
-            });
+            weekdays.forEach(w => { const header = document.createElement('div'); header.className = "bg-slate-100 text-slate-500 p-2 text-center text-xs font-bold"; header.textContent = w; container.appendChild(header); });
 
-            const firstDayIndex = new Date(year, month, 1).getDay();
-            const totalDays = new Date(year, month + 1, 0).getDate();
-
-            for (let i = 0; i < firstDayIndex; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = "bg-slate-50 min-h-[100px]";
-                container.appendChild(emptyCell);
-            }
+            const firstDayIndex = new Date(year, month, 1).getDay(); const totalDays = new Date(year, month + 1, 0).getDate();
+            for (let i = 0; i < firstDayIndex; i++) { const emptyCell = document.createElement('div'); emptyCell.className = "bg-slate-50 min-h-[100px]"; container.appendChild(emptyCell); }
 
             let events = [];
             state.campaigns.forEach(c => {
                 const brand = getBrandFromCampaignName(c.name);
                 (c.stages || []).forEach(s => {
                     (s.items || []).forEach(i => {
-                        if (currentCalendarOwnerFilter !== 'all' && i.owner !== currentCalendarOwnerFilter) return;
-                        if (!i.dueDate) return;
+                        if (currentCalendarOwnerFilter !== 'all' && i.owner !== currentCalendarOwnerFilter) return; if (!i.dueDate) return;
                         events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner, dateStr: i.dueDate, completed: i.completed });
                     });
                 });
             });
             state.adminTasks.forEach(t => {
-                if (currentCalendarOwnerFilter !== 'all' && t.owner !== currentCalendarOwnerFilter) return;
-                if (!t.dueDate || t.dueDate === '無截止日') return;
+                if (currentCalendarOwnerFilter !== 'all' && t.owner !== currentCalendarOwnerFilter) return; if (!t.dueDate || t.dueDate === '無截止日') return;
                 events.push({ type: 'admin', brand: t.client, text: t.text, owner: t.owner, dateStr: t.dueDate, completed: t.status==='done' });
             });
 
             for (let day = 1; day <= totalDays; day++) {
-                const dayCell = document.createElement('div');
-                dayCell.className = "bg-white min-h-[110px] p-1 border-t border-slate-100 flex flex-col justify-between overflow-hidden hover:bg-slate-50/50";
-                
+                const dayCell = document.createElement('div'); dayCell.className = "bg-white min-h-[110px] p-1 border-t border-slate-100 flex flex-col justify-between overflow-hidden hover:bg-slate-50/50";
                 const curMMDD = `${String(month + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
                 const isToday = (new Date().getFullYear()===year && new Date().getMonth()===month && new Date().getDate()===day);
                 
-                const numLabel = document.createElement('span');
-                numLabel.className = `text-xs font-black px-1.5 py-0.5 rounded-md self-start ${isToday?'bg-teal-600 text-white':'text-slate-400'}`;
-                numLabel.textContent = day;
-                dayCell.appendChild(numLabel);
-
-                const listContainer = document.createElement('div');
-                listContainer.className = "space-y-1 mt-1 flex-grow overflow-y-auto max-h-[85px] pr-0.5";
+                const numLabel = document.createElement('span'); numLabel.className = `text-xs font-black px-1.5 py-0.5 rounded-md self-start ${isToday?'bg-teal-600 text-white':'text-slate-400'}`; numLabel.textContent = day; dayCell.appendChild(numLabel);
+                const listContainer = document.createElement('div'); listContainer.className = "space-y-1 mt-1 flex-grow overflow-y-auto max-h-[85px] pr-0.5";
 
                 const dayEvents = events.filter(e => e.dateStr === curMMDD);
                 dayEvents.forEach(ev => {
-                    const evBox = document.createElement('div');
-                    const isOver = checkIsOverdue(ev.dateStr, ev.completed);
-                    evBox.className = `text-[10px] p-1 rounded border leading-tight line-clamp-2 select-none
-                        ${ev.completed?'bg-slate-100 text-slate-400 border-slate-200 line-through': isOver?'bg-rose-600 text-white border-rose-700 font-bold animate-pulse': ev.type==='admin'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-indigo-50 text-indigo-700 border-indigo-200'}
-                    `;
+                    const evBox = document.createElement('div'); const isOver = checkIsOverdue(ev.dateStr, ev.completed);
+                    evBox.className = `text-[10px] p-1 rounded border leading-tight line-clamp-2 select-none ${ev.completed?'bg-slate-100 text-slate-400 border-slate-200 line-through': isOver?'bg-rose-600 text-white border-rose-700 font-bold animate-pulse': ev.type==='admin'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-indigo-50 text-indigo-700 border-indigo-200'}`;
                     evBox.innerHTML = `<strong>[${escapeHTML(ev.brand)}]</strong> ${escapeHTML(ev.text)} <span class="opacity-80">(${escapeHTML(ev.owner)})</span>`;
                     listContainer.appendChild(evBox);
                 });
-
-                dayCell.appendChild(listContainer);
-                container.appendChild(dayCell);
+                dayCell.appendChild(listContainer); container.appendChild(dayCell);
             }
         }
 
-        function moveCalendarMonth(dir) {
-            calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + dir);
-            renderIntelligenceCalendar();
-        }
+        function moveCalendarMonth(dir) { calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + dir); renderIntelligenceCalendar(); }
 
         function renderUI() {
             let overdueCount = 0;
             state.campaigns.forEach(c => (c.stages||[]).forEach(s => (s.items||[]).forEach(i => { if (checkIsOverdue(i.dueDate, i.completed)) overdueCount++; })));
             state.adminTasks.forEach(t => { if (checkIsOverdue(t.dueDate, t.status==='done')) overdueCount++; });
             
-            const overdueEl = document.getElementById('global-overdue-tasks');
-            if (overdueEl) overdueEl.textContent = overdueCount;
+            const overdueEl = document.getElementById('global-overdue-tasks'); if (overdueEl) overdueEl.textContent = overdueCount;
 
             const active = getActiveCampaign();
             if (currentGlobalView === 'dashboard') renderCampaignDashboard();
@@ -994,8 +859,7 @@
             grid.innerHTML = '';
             if (state.notices.length === 0) { grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 bg-white border rounded-2xl">暫無公告。</div>`; return; }
             state.notices.forEach(notice => {
-                const card = document.createElement('div');
-                card.className = "bg-white rounded-2xl p-5 shadow-sm border border-slate-200/70 flex flex-col justify-between";
+                const card = document.createElement('div'); card.className = "bg-white rounded-2xl p-5 shadow-sm border border-slate-200/70 flex flex-col justify-between";
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start gap-2 mb-3">
@@ -1004,53 +868,28 @@
                         </div>
                         <p class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">${escapeHTML(notice.content)}</p>
                     </div>
-                    <div class="border-t border-slate-100 pt-2 mt-4 flex justify-between items-center text-[10px] text-slate-400 font-bold">
-                        <span>✍️ 發布: ${escapeHTML(notice.author)}</span><span>📅 ${escapeHTML(notice.date)}</span>
-                    </div>
+                    <div class="border-t border-slate-100 pt-3 mt-4 flex justify-between items-center text-[10px] text-slate-400 font-bold"><span>✍️ 發布: ${escapeHTML(notice.author)}</span><span>📅 ${escapeHTML(notice.date)}</span></div>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        function deleteNotice(id, e) {
-            e.stopPropagation();
-            state.notices = state.notices.filter(n => n.id !== id);
-            saveStateToStorage();
-        }
-
-        function openNoticeModal(mode) {
-            document.getElementById('notice-modal').classList.remove('hidden');
-        }
+        function deleteNotice(id, e) { e.stopPropagation(); state.notices = state.notices.filter(n => n.id !== id); saveStateToStorage(); }
+        function openNoticeModal(mode) { document.getElementById('notice-modal').classList.remove('hidden'); }
         function closeNoticeModal() { document.getElementById('notice-modal').classList.add('hidden'); }
         function saveNoticeModal() {
-            const t = document.getElementById('notice-title-input').value.trim();
-            const c = document.getElementById('notice-content-input').value.trim();
-            const a = document.getElementById('notice-author-input').value.trim() || '成員';
-            const d = document.getElementById('notice-date-input').value || getTodayString();
+            const t = document.getElementById('notice-title-input').value.trim(); const c = document.getElementById('notice-content-input').value.trim();
+            const a = document.getElementById('notice-author-input').value.trim() || '成員'; const d = document.getElementById('notice-date-input').value || getTodayString();
             if(!t || !c) return;
             state.notices.unshift({ id: 'n_' + Date.now(), title: t, content: c, author: a, date: d });
             closeNoticeModal(); saveStateToStorage();
-        }
-
-        function openStageModal(mode, id='') {
-            currentStageModalMode = mode; activeStageIdInModal = id;
-            const nameIn = document.getElementById('stage-name-input');
-            const ownerIn = document.getElementById('stage-owner-input');
-            if (mode === 'add') { nameIn.value = ''; ownerIn.value = ''; } 
-            else {
-                const active = getActiveCampaign();
-                const stg = active.stages.find(s => s.id === id);
-                if (stg) { nameIn.value = stg.name; ownerIn.value = stg.owner || ''; }
-            }
-            document.getElementById('stage-modal').classList.remove('hidden');
         }
 
         function escapeHTML(str) { if (!str) return ''; return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)); }
 
         window.onload = function() {
             loadStateFromStorage();
-            const adminInput = document.getElementById('admin-task-input');
-            if (adminInput) adminInput.onkeyup = (e) => { if (e.key === 'Enter') addAdminTask(); };
+            const adminInput = document.getElementById('admin-task-input'); if (adminInput) adminInput.onkeyup = (e) => { if (e.key === 'Enter') addAdminTask(); };
         };
     </script>
 </body>
