@@ -329,6 +329,25 @@
     </div>
 
     <script>
+        // =====================================================================
+        // 🔥 Firebase 設定區塊 — 這是原本程式碼缺漏的部分！
+        // 請到 Firebase Console → 專案設定 → 您的應用程式，把下面 6 個值換成你自己的
+        // =====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBkkNE2y1bjLcJ94fWEAVUwcWLJ6bkBgM8",
+  authDomain: "media-planner-os.firebaseapp.com",
+  projectId: "media-planner-os",
+  storageBucket: "media-planner-os.firebasestorage.app",
+  messagingSenderId: "745129351261",
+  appId: "1:745129351261:web:aee454480e82845e0d15b4"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        // =====================================================================
+        // 以上是新增的部分，下面開始是原本的程式碼（只多修了 loadStateFromStorage 裡一個 bug）
+        // =====================================================================
+
         // 初始化資料庫定義
         let state = { campaigns: [], adminTasks: [], notices: [] };
         let currentOwnerFilter = 'all';
@@ -419,10 +438,16 @@
                     if (!state.adminTasks) state.adminTasks = [];
                     if (!state.notices) state.notices = [];
                     state.campaigns.forEach(c => { if (!c.stages) c.stages = []; });
-                    renderUI();
                 } else {
-                    resetAll();
+                    // 修正：原本這裡呼叫了不存在的 resetAll()，導致第一次連線新資料庫時整個壞掉
+                    // 改成：直接建立一份空白初始資料並寫回雲端，之後就會走上面 doc.exists 那條路
+                    state = { campaigns: [], adminTasks: [], notices: [] };
+                    saveStateToStorage();
                 }
+                renderUI();
+            }, (error) => {
+                // 新增錯誤回報，方便之後除錯（例如 Firestore 規則設定錯誤時會在這裡看到原因）
+                console.error("讀取雲端資料失敗，請檢查 Firebase 設定或 Firestore 規則：", error);
             });
         }
 
