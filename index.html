@@ -340,7 +340,7 @@ const firebaseConfig = {
   storageBucket: "media-planner-os.firebasestorage.app",
   messagingSenderId: "745129351261",
   appId: "1:745129351261:web:aee454480e82845e0d15b4"
-        };
+};
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -423,6 +423,63 @@ const firebaseConfig = {
         }
 
         function getAllAdminOwners() { return getAllOwners(); }
+
+        // 新增：原本程式碼缺漏的日期格式化函式（造成設定了上線日期的專案卡片無法顯示在主頁看板）
+        function formatDateStringWithDay(dateStr) {
+            if (!dateStr) return '';
+            const weekdays = ['週日','週一','週二','週三','週四','週五','週六'];
+            let y, m, d;
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                y = parseInt(parts[0]); m = parseInt(parts[1]); d = parseInt(parts[2]);
+            } else if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                y = new Date().getFullYear(); m = parseInt(parts[0]); d = parseInt(parts[1]);
+            } else {
+                return dateStr;
+            }
+            const dateObj = new Date(y, m - 1, d);
+            if (isNaN(dateObj.getTime())) return dateStr;
+            return `${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')} (${weekdays[dateObj.getDay()]})`;
+        }
+
+        // 新增：原本程式碼缺漏的自訂彈窗函式（造成所有刪除確認彈窗完全失效）
+        function triggerCustomAlert(title, message, showConfirm, onConfirm) {
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-message').textContent = message;
+            const controls = document.getElementById('toast-controls');
+            controls.innerHTML = '';
+            if (showConfirm) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = "px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm rounded-lg transition-all";
+                cancelBtn.textContent = "取消";
+                cancelBtn.onclick = closeCustomAlert;
+                const confirmBtn = document.createElement('button');
+                confirmBtn.className = "px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-lg transition-all";
+                confirmBtn.textContent = "確認";
+                confirmBtn.onclick = () => { closeCustomAlert(); if (onConfirm) onConfirm(); };
+                controls.appendChild(cancelBtn);
+                controls.appendChild(confirmBtn);
+            } else {
+                const okBtn = document.createElement('button');
+                okBtn.className = "px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-all";
+                okBtn.textContent = "好";
+                okBtn.onclick = closeCustomAlert;
+                controls.appendChild(okBtn);
+            }
+            document.getElementById('toast-modal').classList.remove('hidden');
+        }
+        function closeCustomAlert() {
+            document.getElementById('toast-modal').classList.add('hidden');
+        }
+
+        // 新增：原本程式碼缺漏的行政事項刪除函式
+        function deleteAdminTask(taskId) {
+            triggerCustomAlert("刪除行政事項", "確定要刪除此行政事項嗎？", true, () => {
+                state.adminTasks = state.adminTasks.filter(t => t.id !== taskId);
+                saveStateToStorage();
+            });
+        }
 
         // 雲端 Firestore 連線控制
         function saveStateToStorage() {
@@ -561,12 +618,18 @@ const firebaseConfig = {
 
         function addCustomItem(stgId) {
             const input = document.getElementById(`input-${stgId}`);
+            const dateInput = document.getElementById(`date-${stgId}`);
             const text = input.value.trim(); if (!text) return;
             const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === stgId);
             if (stg) {
                 if (!stg.items) stg.items = [];
-                stg.items.push({ id: 'item_' + Date.now() + Math.random().toString(36).substr(2,3), text: text, status: "未開始", owner: stg.owner || "未指定", dueDate: "", completed: false });
-                input.value = ''; saveStateToStorage(); renderUI();
+                let dueDateDisplay = "";
+                if (dateInput && dateInput.value) {
+                    const p = dateInput.value.split('-');
+                    dueDateDisplay = `${p[1]}/${p[2]}`;
+                }
+                stg.items.push({ id: 'item_' + Date.now() + Math.random().toString(36).substr(2,3), text: text, status: "未開始", owner: stg.owner || "未指定", dueDate: dueDateDisplay, completed: false });
+                input.value = ''; if (dateInput) dateInput.value = ''; saveStateToStorage(); renderUI();
             }
         }
         function toggleItemCompletion(stgId, itemId) {
@@ -747,7 +810,8 @@ const firebaseConfig = {
                     </div>
                     <div class="flex gap-1 pt-2 border-t border-slate-50">
                         <input type="text" id="input-${stg.id}" placeholder="新增群組工作項目..." class="flex-grow text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                        <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 rounded-lg">追加</button>
+                        <input type="date" id="date-${stg.id}" class="text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 text-slate-500 w-[112px] shrink-0">
+                        <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 rounded-lg shrink-0">追加</button>
                     </div>
                 `;
                 grid.appendChild(card);
