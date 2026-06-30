@@ -332,6 +332,7 @@
         let currentAdminOwnerFilter = 'all'; 
         let currentAdminClientFilter = 'all'; 
         let currentCalendarOwnerFilter = 'all'; 
+        let editingAdminTaskId = null; // 新增：追蹤目前正在編輯中的行政事項卡片 ID
 
         // 智能行事曆時間變數
         let calendarCurrentDate = new Date(); 
@@ -674,6 +675,45 @@
             });
         }
 
+        // 新增：行政事項就地編輯功能
+        function startEditAdminTask(taskId) {
+            editingAdminTaskId = taskId;
+            renderKanban();
+        }
+        function cancelEditAdminTask() {
+            editingAdminTaskId = null;
+            renderKanban();
+        }
+        function saveEditAdminTask(taskId) {
+            const task = state.adminTasks.find(t => t.id === taskId);
+            if (!task) return;
+            const textInput = document.getElementById(`edit-text-${taskId}`);
+            const categorySelect = document.getElementById(`edit-category-${taskId}`);
+            const clientInput = document.getElementById(`edit-client-${taskId}`);
+            const ownerInput = document.getElementById(`edit-owner-${taskId}`);
+            const dateInput = document.getElementById(`edit-date-${taskId}`);
+
+            const text = textInput.value.trim();
+            if (!text) { triggerCustomAlert("未填寫完畢", "任務描述不可空白！", false); return; }
+
+            task.text = text;
+            task.category = categorySelect.value;
+            task.client = clientInput.value.trim() || '通用行政';
+            task.owner = ownerInput.value.trim() || '未指定';
+            if (dateInput.value) {
+                const p = dateInput.value.split('-');
+                task.dueDate = `${p[1]}/${p[2]}`;
+                task.rawDate = dateInput.value;
+            } else {
+                task.dueDate = "無截止日";
+                task.rawDate = "";
+            }
+
+            editingAdminTaskId = null;
+            saveStateToStorage();
+            renderKanban();
+        }
+
         // 新增：原本程式碼缺漏的行政事項新增函式（「加入行政看板」按鈕原本完全沒反應）
         function addAdminTask() {
             const input = document.getElementById('admin-task-input');
@@ -867,6 +907,31 @@
                 const isOver = checkIsOverdue(task.dueDate, isCompleted);
 
                 const card = document.createElement('div');
+
+                // 編輯模式：顯示可編輯表單
+                if (editingAdminTaskId === task.id) {
+                    card.className = "p-3.5 rounded-xl shadow-md border-2 border-indigo-300 bg-indigo-50/40 flex flex-col gap-2.5";
+                    const categories = ['例行週報','例行月報','請款','合約/簽核/用印','臨時跨專案雜務'];
+                    let categoryOptions = categories.map(c => `<option value="${c}" ${task.category===c?'selected':''}>${c}</option>`).join('');
+                    card.innerHTML = `
+                        <input type="text" id="edit-text-${task.id}" value="${escapeHTML(task.text)}" class="w-full text-sm border border-indigo-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white font-semibold">
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="edit-category-${task.id}" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-700">${categoryOptions}</select>
+                            <input type="text" id="edit-client-${task.id}" value="${escapeHTML(task.client||'')}" placeholder="🏢 客戶/品牌別" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-700">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="edit-owner-${task.id}" value="${escapeHTML(task.owner||'')}" placeholder="👤 負責人" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-700">
+                            <input type="date" id="edit-date-${task.id}" value="${task.rawDate||''}" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-500">
+                        </div>
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button onclick="cancelEditAdminTask()" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg transition-all">取消</button>
+                            <button onclick="saveEditAdminTask('${task.id}')" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition-all">儲存</button>
+                        </div>
+                    `;
+                    if (cols[status]) cols[status].appendChild(card);
+                    return;
+                }
+
                 card.className = `p-3.5 rounded-xl shadow-sm border flex flex-col justify-between gap-3 transition-all hover:shadow-md ${isCompleted ? 'bg-slate-100/70 border-slate-200 opacity-70' : isOver ? 'border-rose-300 bg-rose-50/10' : 'bg-white border-slate-200/80'}`;
                 
                 let workflowHtml = '';
@@ -886,7 +951,10 @@
                         <div class="text-[10px] text-slate-400 font-bold mt-1">🏷️ 分類: ${task.category} | 👤 負責人: ${escapeHTML(task.owner)}</div>
                     </div>
                     <div class="flex items-center justify-between border-t border-slate-100 pt-2 shrink-0 mt-2">
-                        <button onclick="deleteAdminTask('${task.id}')" class="text-[10px] text-slate-300 hover:text-rose-500 font-bold">刪除</button>
+                        <div class="flex gap-2">
+                            <button onclick="deleteAdminTask('${task.id}')" class="text-[10px] text-slate-300 hover:text-rose-500 font-bold">刪除</button>
+                            <button onclick="startEditAdminTask('${task.id}')" class="text-[10px] text-indigo-400 hover:text-indigo-600 font-bold">✏️ 編輯</button>
+                        </div>
                         <div class="flex gap-1">${workflowHtml}</div>
                     </div>
                 `;
