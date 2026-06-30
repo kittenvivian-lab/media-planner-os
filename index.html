@@ -674,6 +674,29 @@
             });
         }
 
+        // 新增：原本程式碼缺漏的行政事項新增函式（「加入行政看板」按鈕原本完全沒反應）
+        function addAdminTask() {
+            const input = document.getElementById('admin-task-input');
+            const categorySelect = document.getElementById('admin-task-category');
+            const clientInput = document.getElementById('admin-task-client-input');
+            const ownerInput = document.getElementById('admin-task-owner-input');
+            const dateInput = document.getElementById('admin-task-date');
+
+            const text = input.value.trim();
+            const clientText = clientInput.value.trim() || '通用行政';
+            const ownerText = ownerInput.value.trim() || '未指定';
+            if (!text) return;
+
+            let dDisplay = "無截止日";
+            if (dateInput.value) { const p = dateInput.value.split('-'); dDisplay = `${p[1]}/${p[2]}`; }
+
+            state.adminTasks.push({
+                id: 'admin_' + Date.now(), text: text, category: categorySelect.value, client: clientText, owner: ownerText, dueDate: dDisplay, rawDate: dateInput.value, status: 'todo'
+            });
+            input.value = ''; clientInput.value = ''; ownerInput.value = ''; dateInput.value = '';
+            saveStateToStorage();
+        }
+
         // 修正 1：主頁專案同仁篩選比對邏輯，支援大小寫模糊交叉查詢
         function 自动過濾修正(camp) {
             if (currentOwnerFilter === 'all') return true;
@@ -835,7 +858,8 @@
             Object.keys(cols).forEach(k => cols[k].innerHTML = ''); let counts = { todo:0, done:0 };
 
             state.adminTasks.forEach(task => {
-                if (currentAdminOwnerFilter !== 'all' && task.owner.toLowerCase() !== currentAdminOwnerFilter.toLowerCase()) return;
+                // 修正：補上 owner 安全檢查，避免缺漏負責人欄位的舊資料造成整個函式中斷
+                if (currentAdminOwnerFilter !== 'all' && (task.owner || '').toLowerCase() !== currentAdminOwnerFilter.toLowerCase()) return;
                 if (currentAdminClientFilter !== 'all' && task.client !== currentAdminClientFilter) return;
 
                 let status = task.status || 'todo'; if (status === 'progress') status = 'todo'; 
@@ -871,7 +895,7 @@
             document.getElementById('count-todo').textContent = counts.todo; document.getElementById('count-done').textContent = counts.done;
         }
 
-        // 🔥 核心修正 3：修正行事曆格式，完美對齊人名（去敏捷toLowerCase）以及「幾月幾號」數字標籤
+        // 🔥 核心修正：行事曆人員篩選 — 補上 owner 安全檢查，避免缺漏負責人欄位的資料造成整個函式中斷（這就是篩選一點就全空白的真正原因）
         function renderIntelligenceCalendar() {
             const container = document.getElementById('calendar-grid-body'); if (!container) return;
             const titleEl = document.getElementById('calendar-month-year-title'); const ownerContainer = document.getElementById('calendar-owner-pills');
@@ -897,15 +921,16 @@
                 const brand = getBrandFromCampaignName(c.name);
                 (c.stages || []).forEach(s => {
                     (s.items || []).forEach(i => {
-                        // 修正人員篩選核心邏輯
-                        if (currentCalendarOwnerFilter !== 'all' && i.owner.toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!i.dueDate) return;
-                        events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner, dateStr: i.dueDate, completed: i.completed });
+                        // 修正：(i.owner || '') 避免 owner 為 undefined 時整個函式崩潰
+                        if (currentCalendarOwnerFilter !== 'all' && (i.owner || '').toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!i.dueDate) return;
+                        events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner || '未指定', dateStr: i.dueDate, completed: i.completed });
                     });
                 });
             });
             state.adminTasks.forEach(t => {
-                if (currentCalendarOwnerFilter !== 'all' && t.owner.toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!t.dueDate || t.dueDate === '無截止日') return;
-                events.push({ type: 'admin', brand: t.client, text: t.text, owner: t.owner, dateStr: t.dueDate, completed: t.status==='done' });
+                // 修正：(t.owner || '') 避免 owner 為 undefined 時整個函式崩潰
+                if (currentCalendarOwnerFilter !== 'all' && (t.owner || '').toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!t.dueDate || t.dueDate === '無截止日') return;
+                events.push({ type: 'admin', brand: t.client, text: t.text, owner: t.owner || '未指定', dateStr: t.dueDate, completed: t.status==='done' });
             });
 
             for (let day = 1; day <= totalDays; day++) {
@@ -921,7 +946,7 @@
                     }
                 };
 
-                // 核心修復：不管前置補零或不補零，兩種格式 `06/30` 和 `6/30` 同時精準比對捕捉！
+                // 不管前置補零或不補零，兩種格式 `06/30` 和 `6/30` 同時精準比對捕捉
                 const formatA = `${String(month + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
                 const formatB = `${month + 1}/${day}`;
                 const isToday = (new Date().getFullYear()===year && new Date().getMonth()===month && new Date().getDate()===day);
