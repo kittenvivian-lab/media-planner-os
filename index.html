@@ -229,7 +229,10 @@
                             <input type="text" id="admin-task-client-input" placeholder="🏢 客戶/品牌別" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="admin-task-owner-input" placeholder="👤 負責人" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <div>
+                                <select id="admin-task-owner-select" onchange="handleOwnerSelectChange(this,'admin-task-owner-custom')" class="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"></select>
+                                <input type="text" id="admin-task-owner-custom" placeholder="輸入新成員姓名" class="hidden w-full text-sm border border-slate-200 rounded-lg px-2.5 py-2 mt-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            </div>
                             <input type="date" id="admin-task-date" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-500">
                         </div>
                         <button onclick="addAdminTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 rounded-lg transition-all shadow-sm">
@@ -505,6 +508,42 @@
 
         function getAllAdminOwners() { return getAllOwners(); }
 
+        // ============================================================
+        // 新增：負責人下拉選單共用輔助函式
+        // 設計邏輯：下拉選單列出現有所有同仁，最後加一個「✏️ 其他（新成員）」選項，
+        // 選了之後旁邊會跳出一個小輸入框讓你打新成員的名字，兩種情境都涵蓋到。
+        // ============================================================
+        function buildOwnerSelectOptions(selectedOwner, includeBlankPlaceholder) {
+            const owners = getAllOwners();
+            let html = '';
+            if (includeBlankPlaceholder) html += `<option value="">請選擇負責人</option>`;
+            const ownerExists = selectedOwner && owners.some(o => o.toLowerCase() === selectedOwner.toLowerCase());
+            owners.forEach(o => {
+                html += `<option value="${escapeHTML(o)}" ${selectedOwner && selectedOwner.toLowerCase()===o.toLowerCase() ? 'selected' : ''}>${escapeHTML(o)}</option>`;
+            });
+            // 如果目前的負責人不在現有名單裡（例如舊資料、或剛手動輸入過的新成員），把它也放進選項裡保留住，不然下拉選單會自動跳掉
+            if (selectedOwner && selectedOwner !== '未指定' && !ownerExists) {
+                html = `<option value="${escapeHTML(selectedOwner)}" selected>${escapeHTML(selectedOwner)}</option>` + html;
+            }
+            html += `<option value="__custom__">✏️ 其他（手動輸入新成員）</option>`;
+            return html;
+        }
+        function handleOwnerSelectChange(selectEl, customId) {
+            const customEl = document.getElementById(customId);
+            if (!customEl) return;
+            if (selectEl.value === '__custom__') { customEl.classList.remove('hidden'); customEl.focus(); }
+            else { customEl.classList.add('hidden'); }
+        }
+        function getOwnerValueFromSelect(selectId, customId) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return '';
+            if (sel.value === '__custom__') {
+                const customEl = document.getElementById(customId);
+                return customEl ? customEl.value.trim() : '';
+            }
+            return sel.value;
+        }
+
         // 新增：已完成事項本機隱藏開關（只存自己瀏覽器的 localStorage，不會同步給其他人，每個人可自行決定要不要看）
         function isHideCompletedAdminOn() {
             return localStorage.getItem('hideCompletedAdminTasks') === 'true';
@@ -713,11 +752,10 @@
 
         function addCustomItem(stgId) {
             const input = document.getElementById(`input-${stgId}`);
-            const ownerIn = document.getElementById(`owner-${stgId}`);
             const dateIn = document.getElementById(`date-${stgId}`);
 
             const text = input.value.trim();
-            const owner = ownerIn.value.trim();
+            const owner = getOwnerValueFromSelect(`owner-${stgId}`, `ownercustom-${stgId}`);
             const dateValue = dateIn.value;
 
             if (!text) return;
@@ -733,7 +771,8 @@
                 const dueDateDisplay = `${parts[1]}/${parts[2]}`;
 
                 stg.items.push({ id: 'item_' + Date.now() + Math.random().toString(36).substr(2,3), text: text, status: "未開始", owner: owner, dueDate: dueDateDisplay, completed: false });
-                input.value = ''; ownerIn.value = ''; dateIn.value = ''; saveStateToStorage(); renderUI();
+                input.value = ''; dateIn.value = '';
+                saveStateToStorage(); renderUI();
             }
         }
 
@@ -759,12 +798,23 @@
             inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); }; inp.onblur = save;
         }
         function startInlineOwnerEdit(stgId, itemId, el) {
-            if (el.querySelector('input')) return;
+            if (el.querySelector('select')) return;
             const active = getActiveCampaign(); const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
-            el.innerHTML = `<input type="text" class="w-16 border border-indigo-400 rounded text-center text-xs" value="${escapeHTML(it.owner||'')}">`;
-            const inp = el.querySelector('input'); inp.focus();
-            const save = () => { if (inp.value.trim()) { it.owner = inp.value.trim(); saveStateToStorage(); } renderUI(); };
-            inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); }; inp.onblur = save;
+            const uid = `inlineowner-${stgId}-${itemId}`;
+            el.innerHTML = `
+                <select id="${uid}" class="text-xs border border-indigo-400 rounded px-1 py-0.5 bg-white" onchange="if(this.value==='__custom__'){document.getElementById('${uid}-custom').classList.remove('hidden');document.getElementById('${uid}-custom').focus();}else{saveInlineOwnerSelect('${stgId}','${itemId}', this.value);}">${buildOwnerSelectOptions(it.owner, false)}</select>
+                <input type="text" id="${uid}-custom" placeholder="新成員姓名" class="hidden text-xs border border-indigo-400 rounded px-1 py-0.5 mt-1 w-20">
+            `;
+            document.getElementById(uid).focus();
+            const customInp = document.getElementById(`${uid}-custom`);
+            customInp.onkeydown = (e) => { if (e.key === 'Enter' && customInp.value.trim()) saveInlineOwnerSelect(stgId, itemId, customInp.value.trim()); if (e.key === 'Escape') renderUI(); };
+            customInp.onblur = () => { if (customInp.value.trim()) saveInlineOwnerSelect(stgId, itemId, customInp.value.trim()); };
+        }
+        function saveInlineOwnerSelect(stgId, itemId, value) {
+            if (!value) { renderUI(); return; }
+            const active = getActiveCampaign(); const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
+            if (it) { it.owner = value; saveStateToStorage(); }
+            renderUI();
         }
         function startInlineDateEdit(stgId, itemId, el) {
             if (el.querySelector('input')) return;
@@ -1181,7 +1231,6 @@
             const textInput = document.getElementById(`edit-text-${taskId}`);
             const categorySelect = document.getElementById(`edit-category-${taskId}`);
             const clientInput = document.getElementById(`edit-client-${taskId}`);
-            const ownerInput = document.getElementById(`edit-owner-${taskId}`);
             const dateInput = document.getElementById(`edit-date-${taskId}`);
 
             const text = textInput.value.trim();
@@ -1190,7 +1239,7 @@
             task.text = text;
             task.category = categorySelect.value;
             task.client = clientInput.value.trim() || '通用行政';
-            task.owner = ownerInput.value.trim() || '未指定';
+            task.owner = getOwnerValueFromSelect(`edit-owner-${taskId}`, `edit-owner-custom-${taskId}`) || '未指定';
             if (dateInput.value) {
                 const p = dateInput.value.split('-');
                 task.dueDate = `${p[1]}/${p[2]}`;
@@ -1210,12 +1259,11 @@
             const input = document.getElementById('admin-task-input');
             const categorySelect = document.getElementById('admin-task-category');
             const clientInput = document.getElementById('admin-task-client-input');
-            const ownerInput = document.getElementById('admin-task-owner-input');
             const dateInput = document.getElementById('admin-task-date');
 
             const text = input.value.trim();
             const clientText = clientInput.value.trim() || '通用行政';
-            const ownerText = ownerInput.value.trim() || '未指定';
+            const ownerText = getOwnerValueFromSelect('admin-task-owner-select', 'admin-task-owner-custom') || '未指定';
             if (!text) return;
 
             let dDisplay = "無截止日";
@@ -1224,7 +1272,9 @@
             state.adminTasks.push({
                 id: 'admin_' + Date.now(), text: text, category: categorySelect.value, client: clientText, owner: ownerText, dueDate: dDisplay, rawDate: dateInput.value, status: 'todo'
             });
-            input.value = ''; clientInput.value = ''; ownerInput.value = ''; dateInput.value = '';
+            input.value = ''; clientInput.value = ''; dateInput.value = '';
+            document.getElementById('admin-task-owner-custom').value = '';
+            document.getElementById('admin-task-owner-custom').classList.add('hidden');
             saveStateToStorage();
         }
 
@@ -1322,7 +1372,16 @@
                 let itHtml = '';
                 if (!stg.items || stg.items.length === 0) { itHtml = `<p class="text-xs text-slate-400 italic">暫無要做的事，請於下方新增。</p>`; } 
                 else {
-                    stg.items.forEach(it => {
+                    // 新增：依預計完成日排序（沒有日期的排到最後），避免追加時間排序導致較早到期的事項被埋在後面漏看
+                    const sortedItems = [...stg.items].sort((a, b) => {
+                        const da = parseMMDDToDate(a.dueDate);
+                        const db = parseMMDDToDate(b.dueDate);
+                        if (!da && !db) return 0;
+                        if (!da) return 1;
+                        if (!db) return -1;
+                        return da - db;
+                    });
+                    sortedItems.forEach(it => {
                         const isOver = checkIsOverdue(it.dueDate, it.completed);
                         itHtml += `
                             <div class="flex items-center justify-between gap-2 p-2 border border-slate-50 hover:bg-slate-50 rounded-xl transition-all ${isOver?'bg-rose-50/60 border-rose-100':''}">
@@ -1354,11 +1413,16 @@
                         </div>
                         <div id="body-${stg.id}" class="${isAllItemsCompleted ? 'hidden' : ''} space-y-1.5 mb-4">${itHtml}</div>
                     </div>
-                    <div class="flex gap-1 pt-2 border-t border-slate-100 mt-2">
-                        <input type="text" id="input-${stg.id}" placeholder="新增群組工作項目..." class="flex-grow text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                        <input type="text" id="owner-${stg.id}" placeholder="👤 負責人" class="w-20 text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                        <input type="date" id="date-${stg.id}" class="text-xs border border-slate-200 rounded-lg px-1 py-1.5 text-slate-500 w-[105px] shrink-0">
-                        <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg shrink-0">追加</button>
+                    <div class="pt-2 border-t border-slate-100 mt-2 space-y-1.5">
+                        <div class="flex gap-1">
+                            <input type="text" id="input-${stg.id}" placeholder="新增群組工作項目..." class="flex-grow text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <input type="date" id="date-${stg.id}" class="text-xs border border-slate-200 rounded-lg px-1 py-1.5 text-slate-500 w-[105px] shrink-0">
+                            <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg shrink-0">追加</button>
+                        </div>
+                        <div class="flex gap-1.5 items-start">
+                            <select id="owner-${stg.id}" onchange="handleOwnerSelectChange(this,'ownercustom-${stg.id}')" class="flex-grow text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">${buildOwnerSelectOptions(stg.owner && stg.owner !== '未指定' ? stg.owner : '', true)}</select>
+                            <input type="text" id="ownercustom-${stg.id}" placeholder="輸入新成員姓名" class="hidden flex-grow text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </div>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -1369,6 +1433,14 @@
         function renderKanban() {
             const adminOwners = getAllAdminOwners();
             const adminClients = getAllAdminClients();
+
+            // 新增：填充「新增行政雜務」表單的負責人下拉選單，並保留使用者目前已選的值，避免每次重繪就被重置
+            const createOwnerSelect = document.getElementById('admin-task-owner-select');
+            if (createOwnerSelect) {
+                const prevVal = createOwnerSelect.value;
+                createOwnerSelect.innerHTML = buildOwnerSelectOptions('', true);
+                if (prevVal && Array.from(createOwnerSelect.options).some(o => o.value === prevVal)) createOwnerSelect.value = prevVal;
+            }
             
             const ownerFilterContainer = document.getElementById('admin-owner-filter-pills');
             const clientFilterContainer = document.getElementById('admin-client-filter-pills');
@@ -1418,7 +1490,10 @@
                             <input type="text" id="edit-client-${task.id}" value="${escapeHTML(task.client||'')}" placeholder="🏢 客戶/品牌別" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-700">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="edit-owner-${task.id}" value="${escapeHTML(task.owner||'')}" placeholder="👤 負責人" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-700">
+                            <div>
+                                <select id="edit-owner-${task.id}" onchange="handleOwnerSelectChange(this,'edit-owner-custom-${task.id}')" class="w-full text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-700">${buildOwnerSelectOptions(task.owner, false)}</select>
+                                <input type="text" id="edit-owner-custom-${task.id}" value="" placeholder="輸入新成員姓名" class="hidden w-full text-xs border border-indigo-200 rounded-lg px-2 py-1.5 mt-1 bg-white text-slate-700">
+                            </div>
                             <input type="date" id="edit-date-${task.id}" value="${task.rawDate||''}" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-500">
                         </div>
                         <div class="flex justify-end gap-2 pt-1">
