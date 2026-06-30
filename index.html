@@ -9,6 +9,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     
     <style>
         body {
@@ -33,7 +34,17 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
 
+    <div id="auth-gate" class="fixed inset-0 z-[999] bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 flex items-center justify-center p-4">
+        <div id="auth-gate-card" class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center"></div>
+    </div>
+
+    <div id="app-root" class="hidden flex flex-col justify-between min-h-screen w-full">
+
     <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 text-white shadow-lg border-b border-indigo-500/20">
+        <div class="max-w-7xl mx-auto px-4 py-3 w-full flex items-center justify-end gap-3 text-xs">
+            <span class="text-slate-300">👤 <span id="current-user-name-label" class="font-bold text-white"></span></span>
+            <button onclick="handleLogout()" class="px-2.5 py-1 bg-white/10 hover:bg-white/20 rounded-lg font-bold transition-all">登出</button>
+        </div>
         <div class="max-w-7xl mx-auto px-4 py-6 md:py-8 w-full">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
@@ -74,6 +85,9 @@
                 </button>
                 <button onclick="changeGlobalView('leavehandoff')" id="nav-leavehandoff" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100">
                     🌴 休假代辦
+                </button>
+                <button onclick="changeGlobalView('usermanagement')" id="nav-usermanagement" class="hidden nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100">
+                    👥 成員權限管理
                 </button>
             </div>
         </div>
@@ -296,7 +310,50 @@
             <div class="space-y-5" id="leavehandoff-list"></div>
         </div>
 
+        <div id="view-usermanagement" class="global-view hidden space-y-6">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-900">👥 成員權限管理</h2>
+                <p class="text-sm text-slate-500 mt-0.5 leading-relaxed">只有列在許可名單裡的 Google 信箱才能登入這個系統。新增同仁時，這裡設定的姓名就是他登入後系統顯示的姓名。只有管理員才能看到這個分頁。</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <h3 class="text-sm font-bold text-slate-700 mb-3">➕ 新增許可成員</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5 items-end">
+                    <div class="md:col-span-2">
+                        <label class="text-xs font-bold text-slate-500 block mb-1">Google 登入信箱</label>
+                        <input type="email" id="new-allowed-email" placeholder="example@gmail.com" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 block mb-1">顯示姓名</label>
+                        <input type="text" id="new-allowed-name" placeholder="例：Vivian" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    <div class="flex items-center gap-2 pb-2">
+                        <label class="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input type="checkbox" id="new-allowed-isadmin" class="w-4 h-4 rounded">
+                            設為管理員
+                        </label>
+                        <button onclick="addAllowedUser()" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition-all shadow-sm whitespace-nowrap">新增</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 text-slate-500 text-xs font-bold">
+                        <tr>
+                            <th class="text-left p-3">信箱</th>
+                            <th class="text-left p-3">顯示姓名</th>
+                            <th class="text-center p-3">管理員</th>
+                            <th class="text-right p-3">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allowed-users-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
+    </div>
 
     <div id="create-handoff-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto py-8">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-lg my-auto">
@@ -503,6 +560,10 @@
                     } 
                 });
             }
+            // 新增：把許可名單裡所有成員的姓名也加進來，這樣剛被加進系統、還沒被指派過任何工作的成員，下拉選單裡也能立刻選到他
+            Object.values(allowedUsersMap || {}).forEach(u => {
+                if (u && u.name && u.name.trim() !== '') ownersMap.set(u.name.trim().toLowerCase(), u.name.trim());
+            });
             return Array.from(ownersMap.values());
         }
 
@@ -609,6 +670,187 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // ============================================================
+        // 新增：Google 登入驗證 + 許可名單系統
+        // ============================================================
+        const SUPER_ADMIN_EMAIL = 'kittenvivian@gmail.com'; // 永久管理員信箱，即使許可名單裡沒有自己的資料也一定能登入並管理名單，避免被自己鎖在外面
+        let currentUserEmail = null;
+        let currentUserName = null;
+        let currentUserIsAdmin = false;
+        let allowedUsersMap = {}; // { email: { name, isAdmin } }
+        let allowedUsersListenerStarted = false;
+
+        function renderAuthGateLoading() {
+            document.getElementById('auth-gate-card').innerHTML = `
+                <div class="py-6">
+                    <div class="text-4xl mb-3">⏳</div>
+                    <p class="text-slate-500 text-sm">連線驗證中...</p>
+                </div>`;
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('app-root').classList.add('hidden');
+        }
+
+        function renderAuthGateLogin() {
+            document.getElementById('auth-gate-card').innerHTML = `
+                <div class="text-3xl mb-3">📋</div>
+                <h2 class="text-lg font-extrabold text-slate-900 mb-1">團隊進度看板</h2>
+                <p class="text-sm text-slate-500 mb-6">請使用公司許可的 Google 帳號登入</p>
+                <button onclick="handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 font-bold text-sm py-2.5 rounded-xl transition-all">
+                    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.91c1.7-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.27c-.81.54-1.85.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.96 10.71c-.18-.54-.28-1.11-.28-1.71s.1-1.17.28-1.71V4.95H.96A8.996 8.996 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.95l3 2.34C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
+                    使用 Google 帳號登入
+                </button>
+                <p id="auth-gate-error" class="text-xs text-rose-500 mt-3"></p>
+            `;
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('app-root').classList.add('hidden');
+        }
+
+        function renderAuthGateDenied(email) {
+            document.getElementById('auth-gate-card').innerHTML = `
+                <div class="text-4xl mb-3">🚫</div>
+                <h2 class="text-lg font-extrabold text-rose-600 mb-1">你沒有權限</h2>
+                <p class="text-sm text-slate-500 mb-1">請向管理員申請開通存取權限</p>
+                <p class="text-xs text-slate-400 mb-6 bg-slate-50 rounded-lg py-1.5 px-2 inline-block">登入信箱：${escapeHTML(email)}</p>
+                <button onclick="handleLogout()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm py-2.5 rounded-xl transition-all">登出，更換帳號</button>
+            `;
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('app-root').classList.add('hidden');
+        }
+
+        function handleGoogleLogin() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch((error) => {
+                const errEl = document.getElementById('auth-gate-error');
+                if (errEl) errEl.textContent = '登入失敗，請再試一次（' + error.message + '）';
+                console.error('Google 登入失敗:', error);
+            });
+        }
+
+        function handleLogout() {
+            auth.signOut();
+        }
+
+        // 監聽登入狀態變化：未登入 -> 顯示登入畫面；已登入 -> 檢查許可名單
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                currentUserEmail = null; currentUserName = null; currentUserIsAdmin = false;
+                renderAuthGateLogin();
+                return;
+            }
+            renderAuthGateLoading();
+            const email = (user.email || '').toLowerCase();
+
+            db.collection('allowedUsers').doc(email).get().then((doc) => {
+                const isSuperAdmin = email === SUPER_ADMIN_EMAIL;
+                if (!doc.exists && !isSuperAdmin) {
+                    renderAuthGateDenied(email);
+                    return;
+                }
+                currentUserEmail = email;
+                currentUserName = doc.exists ? doc.data().name : (user.displayName || 'Admin');
+                currentUserIsAdmin = doc.exists ? !!doc.data().isAdmin : true; // 超級管理員信箱即使名單裡沒資料，也視為管理員
+
+                document.getElementById('current-user-name-label').textContent = currentUserName;
+                document.getElementById('nav-usermanagement').classList.toggle('hidden', !currentUserIsAdmin);
+
+                document.getElementById('auth-gate').classList.add('hidden');
+                document.getElementById('app-root').classList.remove('hidden');
+
+                startAllowedUsersListener();
+                loadStateFromStorage();
+            }).catch((error) => {
+                console.error('檢查許可名單失敗:', error);
+                renderAuthGateDenied(email);
+            });
+        });
+
+        // 持續監聽許可名單集合（用來即時更新成員管理頁面，以及讓下拉選單能列出所有許可成員的姓名）
+        function startAllowedUsersListener() {
+            if (allowedUsersListenerStarted) return;
+            allowedUsersListenerStarted = true;
+            db.collection('allowedUsers').onSnapshot((snapshot) => {
+                allowedUsersMap = {};
+                snapshot.forEach((doc) => { allowedUsersMap[doc.id] = doc.data(); });
+                if (currentGlobalView === 'usermanagement') renderUserManagement();
+                renderUI(); // 讓下拉選單即時反映成員名單變化
+            }, (error) => {
+                console.error('讀取許可名單失敗（可能是 Firestore 規則限制非管理員讀取全部清單）:', error);
+            });
+        }
+
+        function addAllowedUser() {
+            if (!currentUserIsAdmin) return;
+            const emailInput = document.getElementById('new-allowed-email');
+            const nameInput = document.getElementById('new-allowed-name');
+            const isAdminInput = document.getElementById('new-allowed-isadmin');
+
+            const email = emailInput.value.trim().toLowerCase();
+            const name = nameInput.value.trim();
+            if (!email || !email.includes('@')) { triggerCustomAlert("信箱格式錯誤", "請輸入正確的 Google 信箱！", false); return; }
+            if (!name) { triggerCustomAlert("未填寫完畢", "請輸入這位成員的顯示姓名！", false); return; }
+
+            db.collection('allowedUsers').doc(email).set({
+                name: name, isAdmin: isAdminInput.checked
+            }).then(() => {
+                emailInput.value = ''; nameInput.value = ''; isAdminInput.checked = false;
+            }).catch((error) => {
+                triggerCustomAlert("新增失敗", "寫入許可名單失敗：" + error.message, false);
+            });
+        }
+
+        function toggleAllowedUserAdmin(email, currentValue) {
+            if (!currentUserIsAdmin) return;
+            db.collection('allowedUsers').doc(email).update({ isAdmin: !currentValue }).catch((error) => {
+                triggerCustomAlert("更新失敗", "更新管理員權限失敗：" + error.message, false);
+            });
+        }
+
+        function removeAllowedUser(email) {
+            if (!currentUserIsAdmin) return;
+            if (email === SUPER_ADMIN_EMAIL) { triggerCustomAlert("無法移除", "這是系統永久管理員信箱，無法從這裡移除。", false); return; }
+            triggerCustomAlert("確認移除", `確定要移除 ${escapeHTML(email)} 的存取權限嗎？移除後該帳號將無法再登入此系統。`, true, () => {
+                db.collection('allowedUsers').doc(email).delete().catch((error) => {
+                    triggerCustomAlert("移除失敗", "移除許可名單失敗：" + error.message, false);
+                });
+            });
+        }
+
+        function renderUserManagement() {
+            const tbody = document.getElementById('allowed-users-table-body'); if (!tbody) return;
+            const emails = Object.keys(allowedUsersMap).sort();
+            if (emails.length === 0 && currentUserEmail !== SUPER_ADMIN_EMAIL) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-slate-400 text-xs py-8">目前許可名單是空的。</td></tr>`;
+                return;
+            }
+            let rows = '';
+            if (!allowedUsersMap[SUPER_ADMIN_EMAIL]) {
+                rows += `
+                    <tr class="border-t border-slate-50">
+                        <td class="p-3 text-slate-700">${escapeHTML(SUPER_ADMIN_EMAIL)}</td>
+                        <td class="p-3 text-slate-700">（系統永久管理員，建議在下方新增一筆同信箱資料以自訂顯示姓名）</td>
+                        <td class="p-3 text-center"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">永久管理員</span></td>
+                        <td class="p-3 text-right text-slate-300 text-xs">—</td>
+                    </tr>`;
+            }
+            emails.forEach(email => {
+                const u = allowedUsersMap[email];
+                const isSuper = email === SUPER_ADMIN_EMAIL;
+                rows += `
+                    <tr class="border-t border-slate-50 hover:bg-slate-50/50">
+                        <td class="p-3 text-slate-700">${escapeHTML(email)}</td>
+                        <td class="p-3 text-slate-700 font-semibold">${escapeHTML(u.name || '')}</td>
+                        <td class="p-3 text-center">
+                            <input type="checkbox" ${u.isAdmin ? 'checked' : ''} onclick="toggleAllowedUserAdmin('${email}', ${!!u.isAdmin})" class="w-4 h-4 rounded cursor-pointer">
+                        </td>
+                        <td class="p-3 text-right">
+                            ${isSuper ? `<span class="text-[10px] text-slate-300">永久管理員</span>` : `<button onclick="removeAllowedUser('${email}')" class="text-xs text-rose-500 hover:text-rose-700 font-bold">移除</button>`}
+                        </td>
+                    </tr>`;
+            });
+            tbody.innerHTML = rows;
+        }
 
         function saveStateToStorage() {
             localStorage.setItem('mediaPlannerMultiStateV8_5', JSON.stringify(state));
@@ -635,14 +877,18 @@
         }
 
         function changeGlobalView(viewName) {
+            if (viewName === 'usermanagement' && !currentUserIsAdmin) return; // 防呆：非管理員不能進入成員管理分頁
             currentGlobalView = viewName;
             document.querySelectorAll('.global-view').forEach(el => { el.classList.add('hidden'); el.classList.remove('block'); });
             const activeView = document.getElementById('view-' + (viewName === 'campaign-detail' ? 'campaign-detail' : viewName));
             if (activeView) { activeView.classList.remove('hidden'); activeView.classList.add('block'); }
             
-            document.querySelectorAll('.nav-tab').forEach(btn => btn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100");
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100";
+                if (btn.id === 'nav-usermanagement' && !currentUserIsAdmin) btn.classList.add('hidden'); // 重設 class 時要保留非管理員看不到此分頁的狀態
+            });
             const activeNav = document.getElementById('nav-' + viewName);
-            if (activeNav) activeNav.className = `nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewName === 'adminboard'?'text-emerald-700 bg-emerald-50':viewName==='calendarview'?'text-teal-700 bg-teal-50':viewName==='leavehandoff'?'text-amber-700 bg-amber-50':'text-indigo-700 bg-indigo-50'}`;
+            if (activeNav) activeNav.className = `nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewName === 'adminboard'?'text-emerald-700 bg-emerald-50':viewName==='calendarview'?'text-teal-700 bg-teal-50':viewName==='leavehandoff'?'text-amber-700 bg-amber-50':viewName==='usermanagement'?'text-slate-900 bg-slate-200':'text-indigo-700 bg-indigo-50'}`;
             
             renderUI();
         }
@@ -1248,7 +1494,6 @@
                 task.dueDate = "無截止日";
                 task.rawDate = "";
             }
-
             editingAdminTaskId = null;
             saveStateToStorage();
             renderKanban();
@@ -1420,7 +1665,7 @@
                             <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg shrink-0">追加</button>
                         </div>
                         <div class="flex gap-1.5 items-start">
-                            <select id="owner-${stg.id}" onchange="handleOwnerSelectChange(this,'ownercustom-${stg.id}')" class="flex-grow text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">${buildOwnerSelectOptions(stg.owner && stg.owner !== '未指定' ? stg.owner : '', true)}</select>
+                            <select id="owner-${stg.id}" onchange="handleOwnerSelectChange(this,'ownercustom-${stg.id}')" class="flex-grow text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">${buildOwnerSelectOptions(stg.owner && stg.owner !== '未指定' ? stg.owner : (currentUserName || ''), true)}</select>
                             <input type="text" id="ownercustom-${stg.id}" placeholder="輸入新成員姓名" class="hidden flex-grow text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                         </div>
                     </div>
@@ -1438,7 +1683,7 @@
             const createOwnerSelect = document.getElementById('admin-task-owner-select');
             if (createOwnerSelect) {
                 const prevVal = createOwnerSelect.value;
-                createOwnerSelect.innerHTML = buildOwnerSelectOptions('', true);
+                createOwnerSelect.innerHTML = buildOwnerSelectOptions(currentUserName || '', true);
                 if (prevVal && Array.from(createOwnerSelect.options).some(o => o.value === prevVal)) createOwnerSelect.value = prevVal;
             }
             
@@ -1801,6 +2046,7 @@
             else if (currentGlobalView === 'calendarview') renderIntelligenceCalendar();
             else if (currentGlobalView === 'toolkit') renderNotices();
             else if (currentGlobalView === 'leavehandoff') renderLeaveHandoffBoard();
+            else if (currentGlobalView === 'usermanagement') renderUserManagement();
             renderKanban();
         }
 
@@ -1843,7 +2089,7 @@
         function escapeHTML(str) { if (!str) return ''; return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)); }
 
         window.onload = function() {
-            loadStateFromStorage();
+            renderAuthGateLoading(); // 先顯示驗證中畫面，等 auth.onAuthStateChanged 觸發後才決定顯示登入頁/拒絕頁/主畫面
             const adminInput = document.getElementById('admin-task-input'); if (adminInput) adminInput.onkeyup = (e) => { if (e.key === 'Enter') addAdminTask(); };
         };
     </script>
