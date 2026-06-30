@@ -138,7 +138,7 @@
                             <h2 class="text-lg md:text-xl font-extrabold text-slate-900" id="detail-campaign-title">載入中...</h2>
                             <span id="detail-campaign-launch-badge" class="text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"></span>
                         </div>
-                        <p class="text-sm text-slate-500 mt-1">直接點擊「工作標題」、「負責人」與「預計完成日」即可原地直接編輯更新，免開彈窗。</p>
+                        <p class="text-sm text-slate-500 mt-1">直接點擊表格欄位可原地直接編輯更新，免開彈窗。</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap shrink-0">
@@ -166,11 +166,11 @@
         <div id="view-adminboard" class="global-view hidden space-y-6">
             <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-sm space-y-2">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">👤 成員行政過濾：</span>
+                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">👤 人員：</span>
                     <div class="flex flex-wrap gap-1.5" id="admin-owner-filter-pills"></div>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-slate-100">
-                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">🏢 客戶行政過濾：</span>
+                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">🏢 客戶：</span>
                     <div class="flex flex-wrap gap-1.5" id="admin-client-filter-pills"></div>
                 </div>
             </div>
@@ -192,7 +192,7 @@
                     <div class="mt-6 space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
                         <span class="text-sm font-bold text-slate-700 block">⚡ 新增行政雜務</span>
                         <div>
-                            <input type="text" id="admin-task-input" placeholder="任務描述 (例：辦理 A/B 品牌六月請款)" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
+                            <input type="text" id="admin-task-input" placeholder="任務描述 (例：彙整與寄出成效週報)" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <select id="admin-task-category" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-700">
@@ -205,7 +205,7 @@
                             <input type="text" id="admin-task-client-input" placeholder="🏢 客戶/品牌別" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="admin-task-owner-input" placeholder="👤 負責同仁名字" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <input type="text" id="admin-task-owner-input" placeholder="👤 負責人" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                             <input type="date" id="admin-task-date" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-500">
                         </div>
                         <button onclick="addAdminTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 rounded-lg transition-all shadow-sm">
@@ -561,6 +561,14 @@
             });
         }
 
+        function saveStageNote(stageId, textValue) {
+            const active = getActiveCampaign();
+            if (active) {
+                const stage = active.stages.find(s => s.id === stageId);
+                if (stage) { stage.note = textValue; saveStateToStorage(); }
+            }
+        }
+
         // 原地一鍵新增群組控制（免視窗彈出）
         function triggerInlineAddStage() {
             const container = document.getElementById('inline-stage-add-container');
@@ -588,7 +596,7 @@
             });
         }
 
-        // 優化 1：新增工作群組原地直接雙擊或點選編輯名稱
+        // 工作群組大項目名稱原地雙擊/編輯
         function startInlineStageRename(stgId, el, e) {
             e.stopPropagation();
             if (el.querySelector('input')) return;
@@ -694,7 +702,7 @@
             saveStateToStorage();
         }
 
-        // 修復 2：優化首頁專案的成員過濾機制，相容不分大小寫比對、且全面防呆不卡死
+        // 修復：不分英文字母大小寫、完美結合空專案的人員過濾規則
         function 自动過濾修正(camp) {
             if (currentOwnerFilter === 'all') return true;
             return (camp.stages || []).some(s => 
@@ -755,7 +763,7 @@
             });
         }
 
-        // 優化 1：工作群組詳情面板渲染，支援「完工群組自動置底與摺疊收合」
+        // 優化 1：完工群組自動摺疊收合並排序置底
         function renderCampaignCampaignDetails(active) {
             if (!active) return;
             document.getElementById('detail-campaign-title').textContent = active.name;
@@ -765,7 +773,7 @@
                 badge.innerHTML = `🚀 上線日：${formatDateStringWithDay(active.launchDate)}`;
             } else {
                 badge.className = "bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 cursor-pointer hover:bg-amber-100 transition-all";
-                badge.innerHTML = `⚠️ 未設定上線日期 (點此編輯)`;
+                badge.innerHTML = `⚠️ 未設定上線日期`;
             }
 
             const grid = document.getElementById('detail-stages-grid'); grid.innerHTML = '';
@@ -774,11 +782,11 @@
                 grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作群組」開始規劃！</div>`; return;
             }
 
-            // 運算排序邏輯：計算哪些群組是「全數做完」的，全完工的排在陣列最後面做置底
+            // 完工置底排序核心
             const sortedStages = [...stagesList].sort((a, b) => {
                 const aDone = a.items && a.items.length > 0 && a.items.every(i => i.completed);
                 const bDone = b.items && b.items.length > 0 && b.items.every(i => i.completed);
-                return aDone - bDone; // false(0) 會排在 true(1) 前面
+                return aDone - bDone;
             });
 
             sortedStages.forEach(stg => {
@@ -807,13 +815,12 @@
                     });
                 }
 
-                // 摺疊控制：若群組全數完工，預設將工作事項容器加上 `hidden` 摺疊隱藏
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-center pb-2 border-b border-slate-100 mb-3">
                             <h4 onclick="startInlineStageRename('${stg.id}', this, event)" class="font-extrabold text-slate-800 text-sm cursor-pointer hover:text-indigo-600 flex items-center gap-1.5" title="點擊可以直接編輯群組名稱">
                                 📁 <span>${escapeHTML(stg.name)}</span>
-                                ${isAllItemsCompleted ? `<span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full select-none">✅ 已全數完工 (已摺疊置底)</span>` : ''}
+                                ${isAllItemsCompleted ? `<span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full select-none">✅ 已完工 (已摺疊置底)</span>` : ''}
                             </h4>
                             <div class="flex gap-1.5 items-center">
                                 <button onclick="const el=document.getElementById('body-${stg.id}'); el.classList.toggle('hidden');" class="text-xs text-slate-400 font-bold px-1" title="收合/展開群組">↕</button>
@@ -897,7 +904,7 @@
             document.getElementById('count-done').textContent = counts.done;
         }
 
-        // 修復 3：行事曆瀏覽排版大復活！完美展示日期，且同仁快選支援大小寫模糊交叉比對
+        // 修復 3：行事曆人員快選大小寫模糊對齊比對過濾
         function renderIntelligenceCalendar() {
             const container = document.getElementById('calendar-grid-body'); if (!container) return;
             const titleEl = document.getElementById('calendar-month-year-title'); const ownerContainer = document.getElementById('calendar-owner-pills');
@@ -923,7 +930,9 @@
                 const brand = getBrandFromCampaignName(c.name);
                 (c.stages || []).forEach(s => {
                     (s.items || []).forEach(i => {
-                        if (currentCalendarOwnerFilter !== 'all' && i.owner.toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!i.dueDate) return;
+                        // 修正 3：加入大小寫不敏感 (toLowerCase) 的行事曆人員比對，徹底解決點選沒反應的問題
+                        if (currentCalendarOwnerFilter !== 'all' && i.owner.toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; 
+                        if (!i.dueDate) return;
                         events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner, dateStr: i.dueDate, completed: i.completed });
                     });
                 });
@@ -948,7 +957,6 @@
                     }
                 };
 
-                // 修復 3 的關鍵處：精準輸出月/日字串，讓日曆天數主體完美顯現日期
                 const curMMDD = `${String(month + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
                 const isToday = (new Date().getFullYear()===year && new Date().getMonth()===month && new Date().getDate()===day);
                 
