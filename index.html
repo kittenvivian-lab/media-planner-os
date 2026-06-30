@@ -64,7 +64,7 @@
                     🏠 專案總覽看板
                 </button>
                 <button onclick="changeGlobalView('calendarview')" id="nav-calendarview" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100">
-                    📅 團隊行事曆
+                    📅 行事曆瀏覽
                 </button>
                 <button onclick="changeGlobalView('adminboard')" id="nav-adminboard" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100">
                     📋 日常行政
@@ -95,7 +95,7 @@
                     <div class="flex flex-wrap gap-1.5" id="owner-filter-pills"></div>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-slate-100">
-                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">🏷️ 品牌篩選：</span>
+                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">🏷️ 客戶：</span>
                     <div class="flex flex-wrap gap-1.5" id="brand-filter-pills"></div>
                 </div>
             </div>
@@ -106,11 +106,11 @@
         <div id="view-calendarview" class="global-view hidden space-y-6">
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 class="text-lg font-bold text-slate-900">📅 團隊工作排期行事曆</h2>
-                    <p class="text-sm text-slate-500 mt-0.5">匯集所有專案工作與行政任務的預計完成日。點擊同仁按鈕可快速過濾交期事項。</p>
+                    <h2 class="text-lg font-bold text-slate-900">📅 工作排期行事曆</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">匯集所有專案工作與行政任務的預計完成日。點擊姓名按鈕可快速過濾交期事項。</p>
                 </div>
                 <div class="flex flex-wrap gap-1 items-center bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs">
-                    <span class="font-bold text-slate-500 px-1">👤 人員快選:</span>
+                    <span class="font-bold text-slate-500 px-1">👤 人員:</span>
                     <div class="flex flex-wrap gap-1" id="calendar-owner-pills"></div>
                 </div>
             </div>
@@ -143,13 +143,13 @@
                 </div>
                 <div class="flex items-center gap-2 flex-wrap shrink-0">
                     <button onclick="openStageModal('add')" class="text-sm font-bold px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-all shadow-sm">
-                        ➕ 新增工作小組/群組
+                        ➕ 新增工作群組
                     </button>
                     <button onclick="triggerRenameActive()" class="text-sm font-bold px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg transition-all">
-                        ✏️ 編輯名稱/上線日
+                        ✏️ 編輯
                     </button>
                     <button onclick="triggerDeleteActive()" class="text-sm font-bold px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg transition-all">
-                        🗑️ 刪除專案
+                        🗑️ 刪除
                     </button>
                 </div>
             </div>
@@ -160,11 +160,11 @@
         <div id="view-adminboard" class="global-view hidden space-y-6">
             <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-sm space-y-2">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">👤 成員行政過濾：</span>
+                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">👤 人員：</span>
                     <div class="flex flex-wrap gap-1.5" id="admin-owner-filter-pills"></div>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-slate-100">
-                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">🏢 客戶行政過濾：</span>
+                    <span class="font-bold text-slate-500 flex items-center gap-1 shrink-0 w-24">🏢 客戶：</span>
                     <div class="flex flex-wrap gap-1.5" id="admin-client-filter-pills"></div>
                 </div>
             </div>
@@ -199,7 +199,7 @@
                             <input type="text" id="admin-task-client-input" placeholder="🏢 客戶/品牌別" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="admin-task-owner-input" placeholder="👤 負責同仁名字" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <input type="text" id="admin-task-owner-input" placeholder="👤 負責人" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                             <input type="date" id="admin-task-date" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-500">
                         </div>
                         <button onclick="addAdminTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 rounded-lg transition-all shadow-sm">
@@ -274,7 +274,7 @@
             <h3 class="font-bold text-slate-900 text-sm mb-4" id="stage-modal-title">群組管理</h3>
             <div class="space-y-4">
                 <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">群組/大項目名稱 (例如：素材核對進稿、KOL外發工作)</label>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">群組/大項目名稱 (例如：素材進稿、KOL)</label>
                     <input type="text" id="stage-name-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 </div>
                 <div>
@@ -764,7 +764,7 @@ const firebaseConfig = {
 
             const grid = document.getElementById('detail-stages-grid'); grid.innerHTML = '';
             if (!active.stages || active.stages.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作小組/群組」開始規劃！</div>`; return;
+                grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作/群組」開始規劃！</div>`; return;
             }
 
             active.stages.forEach(stg => {
