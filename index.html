@@ -451,13 +451,6 @@
         }
         function closeCustomAlert() { document.getElementById('toast-modal').classList.add('hidden'); }
 
-        function deleteAdminTask(taskId) {
-            triggerCustomAlert("刪除行政事項", "確定要刪除此行政事項嗎？", true, () => {
-                state.adminTasks = state.adminTasks.filter(t => t.id !== taskId);
-                saveStateToStorage();
-            });
-        }
-
         // 雲端連線設定
         const firebaseConfig = {
             apiKey: "AIzaSyBkkNE2y1bjLcJ94fWEAVUwcWLJ6bkBgM8",
@@ -561,14 +554,6 @@
             });
         }
 
-        function saveStageNote(stageId, textValue) {
-            const active = getActiveCampaign();
-            if (active) {
-                const stage = active.stages.find(s => s.id === stageId);
-                if (stage) { stage.note = textValue; saveStateToStorage(); }
-            }
-        }
-
         // 原地一鍵新增群組控制（免視窗彈出）
         function triggerInlineAddStage() {
             const container = document.getElementById('inline-stage-add-container');
@@ -596,7 +581,7 @@
             });
         }
 
-        // 工作群組大項目名稱原地雙擊/編輯
+        // 工作群組項目名稱原地編輯修復
         function startInlineStageRename(stgId, el, e) {
             e.stopPropagation();
             if (el.querySelector('input')) return;
@@ -682,27 +667,14 @@
             inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); }; inp.onblur = save;
         }
 
-        function addAdminTask() {
-            const input = document.getElementById('admin-task-input');
-            const categorySelect = document.getElementById('admin-task-category');
-            const clientInput = document.getElementById('admin-task-client-input');
-            const ownerInput = document.getElementById('admin-task-owner-input');
-            const dateInput = document.getElementById('admin-task-date');
-
-            const text = input.value.trim(); const clientText = clientInput.value.trim() || '通用行政'; const ownerText = ownerInput.value.trim() || '未指定';
-            if (!text) return;
-
-            let dDisplay = "無截止日";
-            if (dateInput.value) { const p = dateInput.value.split('-'); dDisplay = `${p[1]}/${p[2]}`; }
-
-            state.adminTasks.push({
-                id: 'admin_' + Date.now(), text: text, category: categorySelect.value, client: clientText, owner: ownerText, dueDate: dDisplay, rawDate: dateInput.value, status: 'todo'
+        function deleteAdminTask(taskId) {
+            triggerCustomAlert("刪除行政事項", "確定要刪除此行政事項嗎？", true, () => {
+                state.adminTasks = state.adminTasks.filter(t => t.id !== taskId);
+                saveStateToStorage();
             });
-            input.value = ''; clientInput.value = ''; ownerInput.value = ''; dateInput.value = '';
-            saveStateToStorage();
         }
 
-        // 修復：不分英文字母大小寫、完美結合空專案的人員過濾規則
+        // 修正 1：主頁專案同仁篩選比對邏輯，支援大小寫模糊交叉查詢
         function 自动過濾修正(camp) {
             if (currentOwnerFilter === 'all') return true;
             return (camp.stages || []).some(s => 
@@ -763,7 +735,6 @@
             });
         }
 
-        // 優化 1：完工群組自動摺疊收合並排序置底
         function renderCampaignCampaignDetails(active) {
             if (!active) return;
             document.getElementById('detail-campaign-title').textContent = active.name;
@@ -782,7 +753,7 @@
                 grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作群組」開始規劃！</div>`; return;
             }
 
-            // 完工置底排序核心
+            // 完工群組自動摺疊排序置底
             const sortedStages = [...stagesList].sort((a, b) => {
                 const aDone = a.items && a.items.length > 0 && a.items.every(i => i.completed);
                 const bDone = b.items && b.items.length > 0 && b.items.every(i => i.completed);
@@ -823,7 +794,7 @@
                                 ${isAllItemsCompleted ? `<span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full select-none">✅ 已完工 (已摺疊置底)</span>` : ''}
                             </h4>
                             <div class="flex gap-1.5 items-center">
-                                <button onclick="const el=document.getElementById('body-${stg.id}'); el.classList.toggle('hidden');" class="text-xs text-slate-400 font-bold px-1" title="收合/展開群組">↕</button>
+                                <button onclick="const el=document.getElementById('body-${stg.id}'); el.classList.toggle('hidden');" class="text-xs text-slate-400 font-bold px-1">↕</button>
                                 <button onclick="deleteStage('${stg.id}',event)" class="text-xs bg-rose-50 hover:bg-rose-100 border text-rose-600 p-1 rounded font-bold">&times;</button>
                             </div>
                         </div>
@@ -867,11 +838,8 @@
                 if (currentAdminOwnerFilter !== 'all' && task.owner.toLowerCase() !== currentAdminOwnerFilter.toLowerCase()) return;
                 if (currentAdminClientFilter !== 'all' && task.client !== currentAdminClientFilter) return;
 
-                let status = task.status || 'todo'; 
-                if (status === 'progress') status = 'todo'; 
-                
-                counts[status]++; 
-                const isCompleted = (status === 'done');
+                let status = task.status || 'todo'; if (status === 'progress') status = 'todo'; 
+                counts[status]++; const isCompleted = (status === 'done');
                 const isOver = checkIsOverdue(task.dueDate, isCompleted);
 
                 const card = document.createElement('div');
@@ -900,11 +868,10 @@
                 `;
                 if (cols[status]) cols[status].appendChild(card);
             });
-            document.getElementById('count-todo').textContent = counts.todo; 
-            document.getElementById('count-done').textContent = counts.done;
+            document.getElementById('count-todo').textContent = counts.todo; document.getElementById('count-done').textContent = counts.done;
         }
 
-        // 修復 3：行事曆人員快選大小寫模糊對齊比對過濾
+        // 🔥 核心修正 3：修正行事曆格式，完美對齊人名（去敏捷toLowerCase）以及「幾月幾號」數字標籤
         function renderIntelligenceCalendar() {
             const container = document.getElementById('calendar-grid-body'); if (!container) return;
             const titleEl = document.getElementById('calendar-month-year-title'); const ownerContainer = document.getElementById('calendar-owner-pills');
@@ -930,9 +897,8 @@
                 const brand = getBrandFromCampaignName(c.name);
                 (c.stages || []).forEach(s => {
                     (s.items || []).forEach(i => {
-                        // 修正 3：加入大小寫不敏感 (toLowerCase) 的行事曆人員比對，徹底解決點選沒反應的問題
-                        if (currentCalendarOwnerFilter !== 'all' && i.owner.toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; 
-                        if (!i.dueDate) return;
+                        // 修正人員篩選核心邏輯
+                        if (currentCalendarOwnerFilter !== 'all' && i.owner.toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!i.dueDate) return;
                         events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner, dateStr: i.dueDate, completed: i.completed });
                     });
                 });
@@ -949,21 +915,21 @@
                     if(e.target !== this && e.target.closest('.event-badge')) return; 
                     const listContainer = this.querySelector('.list-container');
                     if (listContainer.classList.contains('max-h-[85px]')) {
-                        listContainer.classList.remove('max-h-[85px]');
-                        this.classList.add('z-20', 'shadow-xl', 'ring-2', 'ring-indigo-400');
+                        listContainer.classList.remove('max-h-[85px]'); this.classList.add('z-20', 'shadow-xl', 'ring-2', 'ring-indigo-400');
                     } else {
-                        listContainer.classList.add('max-h-[85px]');
-                        this.classList.remove('z-20', 'shadow-xl', 'ring-2', 'ring-indigo-400');
+                        listContainer.classList.add('max-h-[85px]'); this.classList.remove('z-20', 'shadow-xl', 'ring-2', 'ring-indigo-400');
                     }
                 };
 
-                const curMMDD = `${String(month + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+                // 核心修復：不管前置補零或不補零，兩種格式 `06/30` 和 `6/30` 同時精準比對捕捉！
+                const formatA = `${String(month + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+                const formatB = `${month + 1}/${day}`;
                 const isToday = (new Date().getFullYear()===year && new Date().getMonth()===month && new Date().getDate()===day);
                 
                 const numLabel = document.createElement('span'); numLabel.className = `text-xs font-black px-1.5 py-0.5 rounded-md self-start ${isToday?'bg-teal-600 text-white':'text-slate-400'}`; numLabel.textContent = day; dayCell.appendChild(numLabel);
                 const listContainer = document.createElement('div'); listContainer.className = "list-container space-y-1 mt-1 flex-grow overflow-y-auto max-h-[85px] pr-0.5 transition-all duration-200";
 
-                const dayEvents = events.filter(e => e.dateStr === curMMDD || e.dateStr === `${parseInt(month+1)}/${day}`);
+                const dayEvents = events.filter(e => e.dateStr === formatA || e.dateStr === formatB);
                 dayEvents.forEach(ev => {
                     const evBox = document.createElement('div'); const isOver = checkIsOverdue(ev.dateStr, ev.completed);
                     evBox.className = `event-badge text-[10px] p-1 rounded border leading-tight line-clamp-2 select-none cursor-pointer transition-all ${ev.completed?'bg-slate-100 text-slate-400 border-slate-200 line-through': isOver?'bg-rose-600 text-white border-rose-700 font-bold animate-pulse': ev.type==='admin'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-indigo-50 text-indigo-700 border-indigo-200'}`;
@@ -1029,11 +995,7 @@
 
         function moveAdminTask(taskId, nextStatus) {
             const task = state.adminTasks.find(t => t.id === taskId);
-            if (task) {
-                task.status = nextStatus;
-                saveStateToStorage();
-                renderUI(); 
-            }
+            if (task) { task.status = nextStatus; saveStateToStorage(); renderUI(); }
         }
 
         function deleteNotice(id, e) { e.stopPropagation(); state.notices = state.notices.filter(n => n.id !== id); saveStateToStorage(); }
