@@ -138,11 +138,11 @@
                             <h2 class="text-lg md:text-xl font-extrabold text-slate-900" id="detail-campaign-title">載入中...</h2>
                             <span id="detail-campaign-launch-badge" class="text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"></span>
                         </div>
-                        <p class="text-sm text-slate-500 mt-1">直接點擊「工作標題」、「負責人」與「預計完成日」即可原地直接編輯更新，免開彈窗。</p>
+                        <p class="text-sm text-slate-500 mt-1">直接點擊表格欄位可原地直接編輯更新，免開彈窗。</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap shrink-0">
-                    <button onclick="openStageModal('add')" class="text-sm font-bold px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-all shadow-sm">
+                    <button onclick="triggerInlineAddStage()" class="text-sm font-bold px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-all shadow-sm">
                         ➕ 新增工作群組
                     </button>
                     <button onclick="triggerRenameActive()" class="text-sm font-bold px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg transition-all">
@@ -152,6 +152,12 @@
                         🗑️ 刪除
                     </button>
                 </div>
+            </div>
+
+            <div id="inline-stage-add-container" class="hidden bg-white p-4 rounded-xl border border-indigo-100 shadow-sm flex gap-3 max-w-md items-center">
+                <input type="text" id="inline-stage-name-input" placeholder="輸入工作群組名稱 (例如：素材進稿)" class="flex-grow text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                <button onclick="saveInlineStage()" class="bg-indigo-600 text-white px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 shadow-sm">確定建立</button>
+                <button onclick="document.getElementById('inline-stage-add-container').classList.add('hidden')" class="text-slate-400 font-bold px-1">&times;</button>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="detail-stages-grid"></div>
@@ -269,26 +275,6 @@
         </div>
     </div>
 
-    <div id="stage-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-md">
-            <h3 class="font-bold text-slate-900 text-sm mb-4" id="stage-modal-title">群組管理</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">群組/大項目名稱 (例如：素材進稿、KOL)</label>
-                    <input type="text" id="stage-name-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">小組主負責人 (選填)</label>
-                    <input type="text" id="stage-owner-input" placeholder="例：vivian" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button onclick="closeStageModal()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm rounded-lg transition-all">取消</button>
-                    <button onclick="saveStageModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-all">儲存確定</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div id="notice-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-lg">
             <h3 class="font-bold text-slate-900 text-sm mb-4" id="notice-modal-title">新增公告</h3>
@@ -319,6 +305,16 @@
         </div>
     </div>
 
+    <div id="calendar-detail-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-sm text-left">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h4 class="font-extrabold text-slate-900 text-base flex items-center gap-1.5">📌 事項交期明細</h4>
+                <button onclick="closeCalendarDetailModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+            <div class="space-y-3.5 text-sm" id="calendar-detail-modal-body"></div>
+        </div>
+    </div>
+
     <div id="toast-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-sm text-center">
             <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl mx-auto mb-3" id="toast-icon">⚠️</div>
@@ -329,41 +325,16 @@
     </div>
 
     <script>
-        // =====================================================================
-        // 🔥 Firebase 設定區塊 — 這是原本程式碼缺漏的部分！
-        // 請到 Firebase Console → 專案設定 → 您的應用程式，把下面 6 個值換成你自己的
-        // =====================================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyBkkNE2y1bjLcJ94fWEAVUwcWLJ6bkBgM8",
-  authDomain: "media-planner-os.firebaseapp.com",
-  projectId: "media-planner-os",
-  storageBucket: "media-planner-os.firebasestorage.app",
-  messagingSenderId: "745129351261",
-  appId: "1:745129351261:web:aee454480e82845e0d15b4"
-};
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        // =====================================================================
-        // 以上是新增的部分，下面開始是原本的程式碼（只多修了 loadStateFromStorage 裡一個 bug）
-        // =====================================================================
-
-        // 初始化資料庫定義
         let state = { campaigns: [], adminTasks: [], notices: [] };
         let currentOwnerFilter = 'all';
         let currentBrandFilter = 'all'; 
         let currentAdminOwnerFilter = 'all'; 
-        let currentAdminClientFilter = 'all'; // 新增：行政客戶篩選變數
+        let currentAdminClientFilter = 'all'; 
         let currentCalendarOwnerFilter = 'all'; 
 
-        // 行事曆時間管理
         let calendarCurrentDate = new Date(); 
 
         let currentModalMode = 'add';
-        let currentStageModalMode = 'add';
-        let activeStageIdInModal = '';
-        let currentNoticeModalMode = 'add';
-        let activeNoticeIdInModal = '';
         let currentGlobalView = 'dashboard';
 
         function getTodayString() {
@@ -395,36 +366,45 @@ const firebaseConfig = {
             return Array.from(brands);
         }
 
-        // 動態獲取跨專案及行政的所有客戶清單
         function getAllAdminClients() {
             const clients = new Set();
             if (state.adminTasks) state.adminTasks.forEach(t => { if(t.client) clients.add(t.client.trim()); });
             return Array.from(clients);
         }
 
+        // 優化 2：不區分大小寫，所有人名在集合處理時統一轉成小寫去重，只保留唯一的標準不重複清單
         function getAllOwners() {
-            const owners = new Set();
+            const ownersMap = new Map(); // 原始名稱對應
             if (state.campaigns) {
                 state.campaigns.forEach(camp => {
                     if (camp.stages) {
                         camp.stages.forEach(stage => {
-                            if (stage.owner && stage.owner !== '未指定' && stage.owner.trim() !== '') owners.add(stage.owner.trim());
+                            if (stage.owner && stage.owner !== '未指定' && stage.owner.trim() !== '') {
+                                ownersMap.set(stage.owner.trim().toLowerCase(), stage.owner.trim());
+                            }
                             if (stage.items) {
-                                stage.items.forEach(it => { if (it.owner && it.owner !== '未指定' && it.owner.trim() !== '') owners.add(it.owner.trim()); });
+                                stage.items.forEach(it => { 
+                                    if (it.owner && it.owner !== '未指定' && it.owner.trim() !== '') {
+                                        ownersMap.set(it.owner.trim().toLowerCase(), it.owner.trim());
+                                    } 
+                                });
                             }
                         });
                     }
                 });
             }
             if (state.adminTasks) {
-                state.adminTasks.forEach(task => { if (task.owner && task.owner !== '未指定' && task.owner.trim() !== '') owners.add(task.owner.trim()); });
+                state.adminTasks.forEach(task => { 
+                    if (task.owner && task.owner !== '未指定' && task.owner.trim() !== '') {
+                        ownersMap.set(task.owner.trim().toLowerCase(), task.owner.trim());
+                    } 
+                });
             }
-            return Array.from(owners);
+            return Array.from(ownersMap.values());
         }
 
         function getAllAdminOwners() { return getAllOwners(); }
 
-        // 新增：原本程式碼缺漏的日期格式化函式（造成設定了上線日期的專案卡片無法顯示在主頁看板）
         function formatDateStringWithDay(dateStr) {
             if (!dateStr) return '';
             const weekdays = ['週日','週一','週二','週三','週四','週五','週六'];
@@ -435,15 +415,12 @@ const firebaseConfig = {
             } else if (dateStr.includes('/')) {
                 const parts = dateStr.split('/');
                 y = new Date().getFullYear(); m = parseInt(parts[0]); d = parseInt(parts[1]);
-            } else {
-                return dateStr;
-            }
+            } else { return dateStr; }
             const dateObj = new Date(y, m - 1, d);
             if (isNaN(dateObj.getTime())) return dateStr;
             return `${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')} (${weekdays[dateObj.getDay()]})`;
         }
 
-        // 新增：原本程式碼缺漏的自訂彈窗函式（造成所有刪除確認彈窗完全失效）
         function triggerCustomAlert(title, message, showConfirm, onConfirm) {
             document.getElementById('toast-title').textContent = title;
             document.getElementById('toast-message').textContent = message;
@@ -469,11 +446,8 @@ const firebaseConfig = {
             }
             document.getElementById('toast-modal').classList.remove('hidden');
         }
-        function closeCustomAlert() {
-            document.getElementById('toast-modal').classList.add('hidden');
-        }
+        function closeCustomAlert() { document.getElementById('toast-modal').classList.add('hidden'); }
 
-        // 新增：原本程式碼缺漏的行政事項刪除函式
         function deleteAdminTask(taskId) {
             triggerCustomAlert("刪除行政事項", "確定要刪除此行政事項嗎？", true, () => {
                 state.adminTasks = state.adminTasks.filter(t => t.id !== taskId);
@@ -481,7 +455,6 @@ const firebaseConfig = {
             });
         }
 
-        // 雲端 Firestore 連線控制
         function saveStateToStorage() {
             localStorage.setItem('mediaPlannerMultiStateV8_5', JSON.stringify(state));
             db.collection('global').doc('planner_config').set(state).catch(e => console.error("雲端失敗:", e));
@@ -496,15 +469,12 @@ const firebaseConfig = {
                     if (!state.notices) state.notices = [];
                     state.campaigns.forEach(c => { if (!c.stages) c.stages = []; });
                 } else {
-                    // 修正：原本這裡呼叫了不存在的 resetAll()，導致第一次連線新資料庫時整個壞掉
-                    // 改成：直接建立一份空白初始資料並寫回雲端，之後就會走上面 doc.exists 那條路
                     state = { campaigns: [], adminTasks: [], notices: [] };
                     saveStateToStorage();
                 }
                 renderUI();
             }, (error) => {
-                // 新增錯誤回報，方便之後除錯（例如 Firestore 規則設定錯誤時會在這裡看到原因）
-                console.error("讀取雲端資料失敗，請檢查 Firebase 設定或 Firestore 規則：", error);
+                console.error("讀取雲端資料失敗:", error);
             });
         }
 
@@ -516,7 +486,7 @@ const firebaseConfig = {
             
             document.querySelectorAll('.nav-tab').forEach(btn => btn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100");
             const activeNav = document.getElementById('nav-' + viewName);
-            if (activeNav) activeNav.className = `nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewName === 'adminboard'?'text-emerald-700 bg-emerald-50':viewName==='calendarview'?'text-teal-700 bg-teal-50':'text-indigo-700 bg-indigo-50'}`;
+            if (activeNav) activeNav.className = `nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewName === 'adminboard'?'text-emerald-700 bg-emerald-50':viewName=='calendarview'?'text-teal-700 bg-teal-50':'text-indigo-700 bg-indigo-50'}`;
             
             renderUI();
         }
@@ -583,32 +553,27 @@ const firebaseConfig = {
             }
         }
 
-        function openStageModal(mode, id='') {
-            currentStageModalMode = mode; activeStageIdInModal = id;
-            const nameIn = document.getElementById('stage-name-input');
-            const ownerIn = document.getElementById('stage-owner-input');
-            if (mode === 'add') { nameIn.value = ''; ownerIn.value = ''; } 
-            else {
-                const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === id);
-                if (stg) { nameIn.value = stg.name; ownerIn.value = stg.owner || ''; }
-            }
-            document.getElementById('stage-modal').classList.remove('hidden');
+        // 優化 1：觸發原地群組新增面板，完全屏除彈出視窗
+        function triggerInlineAddStage() {
+            const container = document.getElementById('inline-stage-add-container');
+            container.classList.remove('hidden');
+            document.getElementById('inline-stage-name-input').value = '';
+            document.getElementById('inline-stage-name-input').focus();
         }
-        function closeStageModal() { document.getElementById('stage-modal').classList.add('hidden'); }
-        function saveStageModal() {
+
+        function saveInlineStage() {
             const active = getActiveCampaign(); if (!active) return;
-            const name = document.getElementById('stage-name-input').value.trim();
-            const owner = document.getElementById('stage-owner-input').value.trim() || '未指定';
+            const name = document.getElementById('inline-stage-name-input').value.trim();
             if (!name) return;
-            if (currentStageModalMode === 'add') {
-                if (!active.stages) active.stages = [];
-                active.stages.push({ id: 'stg_' + Date.now(), name: name, owner: owner, items: [] });
-            } else {
-                const stg = active.stages.find(s => s.id === activeStageIdInModal);
-                if (stg) { stg.name = name; stg.owner = owner; }
-            }
-            closeStageModal(); saveStateToStorage(); renderUI();
+            if (!active.stages) active.stages = [];
+            
+            // 規格調整：不用再填寫小組主負責人，統一為自訂流程服務
+            active.stages.push({ id: 'stg_' + Date.now(), name: name, owner: '未指定', items: [] });
+            document.getElementById('inline-stage-add-container').classList.add('hidden');
+            saveStateToStorage();
+            renderUI();
         }
+
         function deleteStage(stgId, e) {
             e.stopPropagation();
             triggerCustomAlert("確認刪除群組", "將一併刪除群組內的工作事項喔！", true, () => {
@@ -616,30 +581,53 @@ const firebaseConfig = {
             });
         }
 
+        // 優化 2：新增追加工作項目，負責同仁改為必填 (免下拉直接自由原地 key)，截止日由 HTML 欄位精準捕捉
         function addCustomItem(stgId) {
             const input = document.getElementById(`input-${stgId}`);
-            const dateInput = document.getElementById(`date-${stgId}`);
-            const text = input.value.trim(); if (!text) return;
-            const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === stgId);
+            const ownerIn = document.getElementById(`owner-${stgId}`);
+            const dateIn = document.getElementById(`date-${stgId}`);
+
+            const text = input.value.trim();
+            const owner = ownerIn.value.trim();
+            const dateValue = dateIn.value;
+
+            if (!text) return;
+            if (!owner) {
+                triggerCustomAlert("指派欄位不完整", "請先填寫指派負責同仁的名字！", false);
+                return;
+            }
+            if (!dateValue) {
+                triggerCustomAlert("指派欄位不完整", "預計完成日為必填項目，請選擇日期！", false);
+                return;
+            }
+
+            const active = getActiveCampaign(); 
+            const stg = active.stages.find(s => s.id === stgId);
             if (stg) {
                 if (!stg.items) stg.items = [];
-                let dueDateDisplay = "";
-                if (dateInput && dateInput.value) {
-                    const p = dateInput.value.split('-');
-                    dueDateDisplay = `${p[1]}/${p[2]}`;
-                }
-                stg.items.push({ id: 'item_' + Date.now() + Math.random().toString(36).substr(2,3), text: text, status: "未開始", owner: stg.owner || "未指定", dueDate: dueDateDisplay, completed: false });
-                input.value = ''; if (dateInput) dateInput.value = ''; saveStateToStorage(); renderUI();
+                const parts = dateValue.split('-');
+                const dueDateDisplay = `${parts[1]}/${parts[2]}`;
+
+                stg.items.push({ 
+                    id: 'item_' + Date.now() + Math.random().toString(36).substr(2,3), 
+                    text: text, 
+                    status: "未開始", 
+                    owner: owner, 
+                    dueDate: dueDateDisplay, 
+                    completed: false 
+                });
+                
+                input.value = ''; ownerIn.value = ''; dateIn.value = ''; 
+                saveStateToStorage(); 
+                renderUI();
             }
         }
+
         function toggleItemCompletion(stgId, itemId) {
             const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === stgId); const it = stg.items.find(i => i.id === itemId);
             if (it) { it.completed = !it.completed; it.status = it.completed ? "已完成" : "進行中"; saveStateToStorage(); renderUI(); }
         }
-        function changeItemStatusDirect(stgId, itemId, status) {
-            const active = getActiveCampaign(); const stg = active.stages.find(s => s.id === stgId); const it = stg.items.find(i => i.id === itemId);
-            if (it) { it.status = status; it.completed = (status === "已完成"); saveStateToStorage(); renderUI(); }
-        }
+
         function deleteItem(stgId, itemId, e) {
             e.stopPropagation();
             triggerCustomAlert("刪除事項", "確定刪除此事項？", true, () => {
@@ -656,20 +644,22 @@ const firebaseConfig = {
             const save = () => { if (inp.value.trim()) { it.text = inp.value.trim(); saveStateToStorage(); } renderUI(); };
             inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); }; inp.onblur = save;
         }
+
         function startInlineOwnerEdit(stgId, itemId, el) {
             if (el.querySelector('input')) return;
             const active = getActiveCampaign(); const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
             el.innerHTML = `<input type="text" class="w-16 border border-indigo-400 rounded text-center text-xs" value="${escapeHTML(it.owner||'')}">`;
             const inp = el.querySelector('input'); inp.focus();
-            const save = () => { it.owner = inp.value.trim() || '未指定'; saveStateToStorage(); renderUI(); };
+            const save = () => { if (inp.value.trim()) { it.owner = inp.value.trim(); saveStateToStorage(); } renderUI(); };
             inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); }; inp.onblur = save;
         }
+
         function startInlineDateEdit(stgId, itemId, el) {
             if (el.querySelector('input')) return;
             const active = getActiveCampaign(); const it = active.stages.find(s => s.id === stgId).items.find(i => i.id === itemId);
             el.innerHTML = `<input type="text" placeholder="MM/DD" class="w-16 border border-indigo-400 rounded text-center text-xs" value="${escapeHTML(it.dueDate||'')}">`;
             const inp = el.querySelector('input'); inp.focus();
-            const save = () => { it.dueDate = inp.value.trim(); saveStateToStorage(); renderUI(); };
+            const save = () => { if (inp.value.trim()) { it.dueDate = inp.value.trim(); saveStateToStorage(); } renderUI(); };
             inp.onkeydown = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') renderUI(); }; inp.onblur = save;
         }
 
@@ -695,7 +685,7 @@ const firebaseConfig = {
 
         function 自动過濾修正(camp) {
             if (currentOwnerFilter === 'all') return true;
-            return (camp.stages || []).some(s => s.owner === currentOwnerFilter || (s.items || []).some(i => i.owner === currentOwnerFilter));
+            return (camp.stages || []).some(s => s.owner.trim().toLowerCase() === currentOwnerFilter.toLowerCase() || (s.items || []).some(i => i.owner.trim().toLowerCase() === currentOwnerFilter.toLowerCase()));
         }
 
         function renderCampaignDashboard() {
@@ -705,9 +695,9 @@ const firebaseConfig = {
             
             const owners = getAllOwners(); const brands = getAllBrands();
 
-            oContainer.innerHTML = `<button onclick="currentOwnerFilter='all';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentOwnerFilter==='all'?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部成員</button>`;
-            owners.forEach(o => { oContainer.innerHTML += `<button onclick="currentOwnerFilter='${o}';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentOwnerFilter===o?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${o}</button>`; });
-            bContainer.innerHTML = `<button onclick="currentBrandFilter='all';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentBrandFilter==='all'?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部客戶</button>`;
+            oContainer.innerHTML = `<button onclick="currentOwnerFilter='all';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentOwnerFilter==='all'?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部</button>`;
+            owners.forEach(o => { oContainer.innerHTML += `<button onclick="currentOwnerFilter='${o}';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentOwnerFilter.toLowerCase()===o.toLowerCase()?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${o}</button>`; });
+            bContainer.innerHTML = `<button onclick="currentBrandFilter='all';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentBrandFilter==='all'?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部</button>`;
             brands.forEach(b => { bContainer.innerHTML += `<button onclick="currentBrandFilter='${b}';renderUI();" class="px-3 py-1 rounded-lg font-bold ${currentBrandFilter===b?'bg-indigo-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${b}</button>`; });
 
             const grid = document.getElementById('campaign-grid'); grid.innerHTML = '';
@@ -744,12 +734,13 @@ const firebaseConfig = {
                         </div>
                         <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2"><div class="h-full rounded-full ${hasOverdue?'bg-rose-500':'bg-indigo-600'}" style="width: ${pct}%"></div></div>
                     </div>
-                    <div class="border-t border-slate-100 pt-3 flex justify-between items-center text-[10px] text-slate-400 font-bold mt-4"><span>🏷️ 客戶別: ${escapeHTML(getBrandFromCampaignName(camp.name))}</span><span class="text-indigo-600">管理細項面板 ➔</span></div>
+                    <div class="border-t border-slate-100 pt-3 flex justify-between items-center text-[10px] text-slate-400 font-bold mt-4"><span>🏷️ 客戶: ${escapeHTML(getBrandFromCampaignName(camp.name))}</span><span class="text-indigo-600">管理細項面板 ➔</span></div>
                 `;
                 grid.appendChild(card);
             });
         }
 
+        // 優化 2：簡化工作細項面板，移除任何進度下拉選單，只保留精美的打勾與刪除線功能
         function renderCampaignCampaignDetails(active) {
             if (!active) return;
             document.getElementById('detail-campaign-title').textContent = active.name;
@@ -759,12 +750,12 @@ const firebaseConfig = {
                 badge.innerHTML = `🚀 上線日：${formatDateStringWithDay(active.launchDate)}`;
             } else {
                 badge.className = "bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 cursor-pointer hover:bg-amber-100 transition-all";
-                badge.innerHTML = `⚠️ 未設定上線日期 (點此編輯)`;
+                badge.innerHTML = `⚠️ 未設定上線日期`;
             }
 
             const grid = document.getElementById('detail-stages-grid'); grid.innerHTML = '';
             if (!active.stages || active.stages.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作/群組」開始規劃！</div>`; return;
+                grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作群組」開始規劃！</div>`; return;
             }
 
             active.stages.forEach(stg => {
@@ -780,15 +771,10 @@ const firebaseConfig = {
                             <div class="flex items-center justify-between gap-2 p-2 border border-slate-50 hover:bg-slate-50 rounded-xl transition-all ${isOver?'bg-rose-50/60 border-rose-100':''}">
                                 <div class="flex items-center gap-2 min-w-0 flex-grow">
                                     <input type="checkbox" ${it.completed?'checked':''} onclick="toggleItemCompletion('${stg.id}','${it.id}')" class="w-4 h-4 rounded text-indigo-600 cursor-pointer shrink-0">
-                                    <select onchange="changeItemStatusDirect('${stg.id}','${it.id}',this.value)" class="text-[11px] border rounded p-0.5 font-bold cursor-pointer ${it.status==='已完成'?'text-emerald-600 bg-emerald-50':it.status==='進行中'?'text-amber-600 bg-amber-50':'text-slate-500 bg-white'}">
-                                        <option value="未開始" ${it.status==='未開始'?'selected' : ''}>⏳ 未開始</option>
-                                        <option value="進行中" ${it.status==='進行中'?'selected' : ''}>⚡ 進行中</option>
-                                        <option value="已完成" ${it.status==='已完成'?'selected' : ''}>✅ 已完成</option>
-                                    </select>
-                                    <div onclick="startInlineEditItem('${stg.id}','${it.id}',this)" class="text-sm cursor-text flex-grow min-w-0 font-medium ${it.completed?'line-through text-slate-400':'text-slate-700'}">${escapeHTML(it.text)}</div>
+                                    <div onclick="startInlineEditItem('${stg.id}','${it.id}',this)" class="text-sm cursor-text flex-grow min-w-0 font-medium ${it.completed?'line-through text-slate-400 font-normal':'text-slate-700'}">${escapeHTML(it.text)}</div>
                                 </div>
                                 <div class="flex items-center gap-1.5 text-xs shrink-0 font-bold">
-                                    <span onclick="startInlineOwnerEdit('${stg.id}','${it.id}',this)" class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded cursor-pointer hover:bg-indigo-50 hover:text-indigo-700">👤 ${escapeHTML(it.owner||'未指定')}</span>
+                                    <span onclick="startInlineOwnerEdit('${stg.id}','${it.id}',this)" class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded cursor-pointer hover:bg-indigo-50 hover:text-indigo-600">👤 ${escapeHTML(it.owner||'未指定')}</span>
                                     <span onclick="startInlineDateEdit('${stg.id}','${it.id}',this)" class="px-1.5 py-0.5 rounded cursor-pointer select-none ${isOver?'bg-rose-600 text-white animate-pulse':'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}">📅 ${it.dueDate ? it.dueDate : '設定交期'}</span>
                                     <button onclick="deleteItem('${stg.id}','${it.id}',event)" class="text-slate-300 hover:text-rose-600 px-1 font-black text-sm">&times;</button>
                                 </div>
@@ -800,26 +786,30 @@ const firebaseConfig = {
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-center pb-2 border-b border-slate-100 mb-3">
-                            <h4 class="font-extrabold text-slate-800 text-sm">📁 ${escapeHTML(stg.name)} <span class="text-xs text-slate-400 font-normal">(主管: ${stg.owner})</span></h4>
+                            <h4 class="font-extrabold text-slate-800 text-sm">📁 ${escapeHTML(stg.name)}</h4>
                             <div class="flex gap-1">
-                                <button onclick="openStageModal('edit','${stg.id}')" class="text-xs bg-slate-50 hover:bg-slate-100 border p-1 rounded font-bold text-slate-500">✏️</button>
                                 <button onclick="deleteStage('${stg.id}',event)" class="text-xs bg-rose-50 hover:bg-rose-100 border text-rose-600 p-1 rounded font-bold">&times;</button>
                             </div>
                         </div>
                         <div class="space-y-1.5 mb-4">${itHtml}</div>
                     </div>
-                    <div class="flex gap-1 pt-2 border-t border-slate-50">
-                        <input type="text" id="input-${stg.id}" placeholder="新增群組工作項目..." class="flex-grow text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                        <input type="date" id="date-${stg.id}" class="text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 text-slate-500 w-[112px] shrink-0">
-                        <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 rounded-lg shrink-0">追加</button>
+                    <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 mb-1">📝 進度備忘錄 (Note)：</label>
+                            <textarea id="note-${stg.id}" oninput="saveStageNote('${stg.id}', this.value)" placeholder="例：正在跟進對接進度中..." class="w-full text-sm border border-slate-200 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-50/50 min-h-[55px] resize-y">${escapeHTML(stg.note || '')}</textarea>
+                        </div>
+                        <div class="flex gap-1 items-center flex-wrap sm:flex-nowrap">
+                            <input type="text" id="input-${stg.id}" placeholder="追加專案事項..." class="flex-grow text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-w-0">
+                            <input type="text" id="owner-${stg.id}" placeholder="👤 負責同仁" class="w-20 text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <input type="date" id="date-${stg.id}" class="text-xs border border-slate-200 rounded-lg px-1 py-1.5 text-slate-500 w-[105px] shrink-0">
+                            <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg shrink-0">追加</button>
+                        </div>
                     </div>
                 `;
                 grid.appendChild(card);
-                const el = document.getElementById(`input-${stg.id}`); if (el) el.onkeyup = (e) => { if (e.key === 'Enter') addCustomItem(stg.id); };
             });
         }
 
-        // 行政版塊大重構：同時渲染「同仁人員」與「行政客戶別」雙重按鈕篩選列
         function renderKanban() {
             const adminOwners = getAllAdminOwners();
             const adminClients = getAllAdminClients();
@@ -828,40 +818,33 @@ const firebaseConfig = {
             const clientFilterContainer = document.getElementById('admin-client-filter-pills');
             
             if (ownerFilterContainer) {
-                ownerFilterContainer.innerHTML = `<button onclick="currentAdminOwnerFilter='all';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminOwnerFilter==='all'?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部成員</button>`;
-                adminOwners.forEach(o => {
-                    ownerFilterContainer.innerHTML += `<button onclick="currentAdminOwnerFilter='${o}';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminOwnerFilter===o?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${o}</button>`;
-                });
+                ownerFilterContainer.innerHTML = `<button onclick="currentAdminOwnerFilter='all';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminOwnerFilter==='all'?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部</button>`;
+                adminOwners.forEach(o => { ownerFilterContainer.innerHTML += `<button onclick="currentAdminOwnerFilter='${o}';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminOwnerFilter.toLowerCase()===o.toLowerCase()?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${o}</button>`; });
             }
 
             if (clientFilterContainer) {
-                clientFilterContainer.innerHTML = `<button onclick="currentAdminClientFilter='all';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminClientFilter==='all'?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部客戶事務</button>`;
-                adminClients.forEach(c => {
-                    clientFilterContainer.innerHTML += `<button onclick="currentAdminClientFilter='${c}';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminClientFilter===c?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${c}</button>`;
-                });
+                clientFilterContainer.innerHTML = `<button onclick="currentAdminClientFilter='all';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminClientFilter==='all'?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">全部</button>`;
+                adminClients.forEach(c => { clientFilterContainer.innerHTML += `<button onclick="currentAdminClientFilter='${c}';renderKanban();" class="px-2.5 py-1 rounded-lg font-bold ${currentAdminClientFilter===c?'bg-emerald-600 text-white shadow-sm':'bg-slate-100 text-slate-600'}">${c}</button>`; });
             }
 
             const cols = { todo: document.getElementById('kanban-todo'), done: document.getElementById('kanban-done') };
             if (!cols.todo) return;
             
-            Object.keys(cols).forEach(k => cols[k].innerHTML = '');
-            let counts = { todo:0, done:0 };
+            Object.keys(cols).forEach(k => cols[k].innerHTML = ''); let counts = { todo:0, done:0 };
 
             state.adminTasks.forEach(task => {
-                // 雙重交叉組合篩選過濾
-                if (currentAdminOwnerFilter !== 'all' && task.owner !== currentAdminOwnerFilter) return;
+                if (currentAdminOwnerFilter !== 'all' && task.owner.toLowerCase() !== currentAdminOwnerFilter.toLowerCase()) return;
                 if (currentAdminClientFilter !== 'all' && task.client !== currentAdminClientFilter) return;
 
                 let status = task.status || 'todo'; 
-                if (status === 'progress') status = 'todo'; // 強制相容 progress 舊資料
+                if (status === 'progress') status = 'todo'; 
                 
                 counts[status]++; 
                 const isCompleted = (status === 'done');
                 const isOver = checkIsOverdue(task.dueDate, isCompleted);
 
                 const card = document.createElement('div');
-                card.className = `p-3.5 rounded-xl shadow-sm border flex flex-col justify-between gap-3 transition-all hover:shadow-md 
-                    ${isCompleted ? 'bg-slate-100/70 border-slate-200 opacity-70' : isOver ? 'border-rose-300 bg-rose-50/10' : 'bg-white border-slate-200/80'}`;
+                card.className = `p-3.5 rounded-xl shadow-sm border flex flex-col justify-between gap-3 transition-all hover:shadow-md ${isCompleted ? 'bg-slate-100/70 border-slate-200 opacity-70' : isOver ? 'border-rose-300 bg-rose-50/10' : 'bg-white border-slate-200/80'}`;
                 
                 let workflowHtml = '';
                 if (!isCompleted) {
@@ -873,7 +856,7 @@ const firebaseConfig = {
                 card.innerHTML = `
                     <div>
                         <div class="flex items-center justify-between mb-1.5">
-                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded ${isCompleted ? 'bg-slate-200 text-slate-500' : 'bg-indigo-50 text-indigo-700 border border-indigo-100/60'}">🏢 客戶別: ${escapeHTML(task.client||'通用')}</span>
+                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded ${isCompleted ? 'bg-slate-200 text-slate-500' : 'bg-indigo-50 text-indigo-700 border border-indigo-100/60'}">🏢 客戶: ${escapeHTML(task.client||'通用')}</span>
                             <span class="text-[9px] font-bold ${isCompleted ? 'text-slate-400' : isOver ? 'text-white bg-rose-600 px-1.5 py-0.5 rounded animate-pulse' : 'text-slate-400'}">📅 ${task.dueDate}</span>
                         </div>
                         <p class="text-sm font-semibold leading-relaxed ${isCompleted ? 'line-through text-slate-400 font-normal' : 'text-slate-700'}">${escapeHTML(task.text)}</p>
@@ -890,14 +873,15 @@ const firebaseConfig = {
             document.getElementById('count-done').textContent = counts.done;
         }
 
+        // 優化 3：行事曆瀏覽大升級，放不下的卡片點擊可完整展開，且支持單項彈窗檢視客戶別大卡
         function renderIntelligenceCalendar() {
             const container = document.getElementById('calendar-grid-body'); if (!container) return;
             const titleEl = document.getElementById('calendar-month-year-title'); const ownerContainer = document.getElementById('calendar-owner-pills');
 
             const allStaff = getAllOwners();
-            ownerContainer.innerHTML = `<button onclick="currentCalendarOwnerFilter='all';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter==='all'?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">所有人</button>`;
+            ownerContainer.innerHTML = `<button onclick="currentCalendarOwnerFilter='all';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter==='all'?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">全部</button>`;
             allStaff.forEach(st => {
-                ownerContainer.innerHTML += `<button onclick="currentCalendarOwnerFilter='${st}';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter===st?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">${st}</button>`;
+                ownerContainer.innerHTML += `<button onclick="currentCalendarOwnerFilter='${st}';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter.toLowerCase()===st.toLowerCase()?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">${st}</button>`;
             });
 
             const year = calendarCurrentDate.getFullYear(); const month = calendarCurrentDate.getMonth();
@@ -915,40 +899,81 @@ const firebaseConfig = {
                 const brand = getBrandFromCampaignName(c.name);
                 (c.stages || []).forEach(s => {
                     (s.items || []).forEach(i => {
-                        if (currentCalendarOwnerFilter !== 'all' && i.owner !== currentCalendarOwnerFilter) return; if (!i.dueDate) return;
+                        if (currentCalendarOwnerFilter !== 'all' && i.owner.toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!i.dueDate) return;
                         events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner, dateStr: i.dueDate, completed: i.completed });
                     });
                 });
             });
             state.adminTasks.forEach(t => {
-                if (currentCalendarOwnerFilter !== 'all' && t.owner !== currentCalendarOwnerFilter) return; if (!t.dueDate || t.dueDate === '無截止日') return;
+                if (currentCalendarOwnerFilter !== 'all' && t.owner.toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!t.dueDate || t.dueDate === '無截止日') return;
                 events.push({ type: 'admin', brand: t.client, text: t.text, owner: t.owner, dateStr: t.dueDate, completed: t.status==='done' });
             });
 
             for (let day = 1; day <= totalDays; day++) {
-                const dayCell = document.createElement('div'); dayCell.className = "bg-white min-h-[110px] p-1 border-t border-slate-100 flex flex-col justify-between overflow-hidden hover:bg-slate-50/50";
+                const dayCell = document.createElement('div'); 
+                dayCell.className = "bg-white min-h-[110px] p-1 border-t border-slate-100 flex flex-col justify-between overflow-hidden hover:bg-slate-50/50 cursor-pointer relative group transition-all duration-200";
                 
+                // 點擊整個日期格子時，可以展開隱藏工作，免除滾動限制
+                dayCell.onclick = function(e) {
+                    if(e.target !== this && e.target.closest('.event-badge')) return; 
+                    const listContainer = this.querySelector('.list-container');
+                    if (listContainer.classList.contains('max-h-[85px]')) {
+                        listContainer.classList.remove('max-h-[85px]');
+                        this.classList.add('z-20', 'shadow-xl', 'ring-2', 'ring-indigo-400');
+                    } else {
+                        listContainer.classList.add('max-h-[85px]');
+                        this.classList.remove('z-20', 'shadow-xl', 'ring-2', 'ring-indigo-400');
+                    }
+                };
+
                 const curMMDD = `${String(month + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
                 const isToday = (new Date().getFullYear()===year && new Date().getMonth()===month && new Date().getDate()===day);
                 
                 const numLabel = document.createElement('span'); numLabel.className = `text-xs font-black px-1.5 py-0.5 rounded-md self-start ${isToday?'bg-teal-600 text-white':'text-slate-400'}`; numLabel.textContent = day; dayCell.appendChild(numLabel);
+                
                 const listContainer = document.createElement('div');
-                listContainer.className = "space-y-1 mt-1 flex-grow overflow-y-auto max-h-[85px] pr-0.5";
+                listContainer.className = "list-container space-y-1 mt-1 flex-grow overflow-y-auto max-h-[85px] pr-0.5 transition-all duration-200";
 
                 const dayEvents = events.filter(e => e.dateStr === curMMDD);
                 dayEvents.forEach(ev => {
                     const evBox = document.createElement('div'); const isOver = checkIsOverdue(ev.dateStr, ev.completed);
-                    evBox.className = `text-[10px] p-1 rounded border leading-tight line-clamp-2 select-none ${ev.completed?'bg-slate-100 text-slate-400 border-slate-200 line-through': isOver?'bg-rose-600 text-white border-rose-700 font-bold animate-pulse': ev.type==='admin'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-indigo-50 text-indigo-700 border-indigo-200'}`;
-                    evBox.innerHTML = `<strong>[${escapeHTML(ev.brand)}]</strong> ${escapeHTML(ev.text)} <span class="opacity-80">(${escapeHTML(ev.owner)})</span>`;
+                    evBox.className = `event-badge text-[10px] p-1 rounded border leading-tight line-clamp-2 select-none cursor-pointer transition-all
+                        ${ev.completed?'bg-slate-100 text-slate-400 border-slate-200 line-through': isOver?'bg-rose-600 text-white border-rose-700 font-bold animate-pulse': ev.type==='admin'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-indigo-50 text-indigo-700 border-indigo-200'}
+                    `;
+                    evBox.innerHTML = `<strong>[${escapeHTML(ev.brand)}]</strong> ${escapeHTML(ev.text)}`;
+                    
+                    // 點擊特定事項卡片，顯示包含完整文字、品牌客戶別、負責同仁的大看板大字卡
+                    evBox.onclick = (e) => {
+                        e.stopPropagation();
+                        openCalendarDetailModal(ev);
+                    };
+
                     listContainer.appendChild(evBox);
                 });
+
                 dayCell.appendChild(listContainer); container.appendChild(dayCell);
             }
         }
 
+        function openCalendarDetailModal(ev) {
+            const body = document.getElementById('calendar-detail-modal-body');
+            body.innerHTML = `
+                <div class="space-y-2.5">
+                    <div><span class="text-xs font-bold text-slate-400 block">🏢 所屬品牌客戶別</span><span class="text-sm font-black text-slate-800">${escapeHTML(ev.brand)}</span></div>
+                    <div><span class="text-xs font-bold text-slate-400 block">✍️ 工作事項完整內容</span><span class="text-sm font-medium text-slate-700 leading-relaxed block bg-slate-50 p-2.5 rounded-xl border border-slate-100">${escapeHTML(ev.text)}</span></div>
+                    <div><span class="text-xs font-bold text-slate-400 block">👤 負責同仁</span><span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">👤 ${escapeHTML(ev.owner)}</span></div>
+                    <div><span class="text-xs font-bold text-slate-400 block">📊 當前狀態</span><span class="text-xs font-bold px-2 py-0.5 rounded ${ev.completed?'bg-slate-100 text-slate-500':'bg-amber-50 text-amber-700'}">${ev.completed?'已完成 Finished':'待處理 Pending'}</span></div>
+                </div>
+            `;
+            document.getElementById('calendar-detail-modal').classList.remove('hidden');
+        }
+
+        function closeCalendarDetailModal() {
+            document.getElementById('calendar-detail-modal').classList.add('hidden');
+        }
+
         function moveCalendarMonth(dir) { calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + dir); renderIntelligenceCalendar(); }
 
-        // 效能優化重繪邏輯：行事曆只有當切換到該分頁時才去跑高密度的畫格子運算，降載分流！
         function renderUI() {
             let overdueCount = 0;
             if (state.campaigns) state.campaigns.forEach(c => (c.stages||[]).forEach(s => (s.items||[]).forEach(i => { if (checkIsOverdue(i.dueDate, i.completed)) overdueCount++; })));
@@ -994,7 +1019,6 @@ const firebaseConfig = {
         }
 
         function deleteNotice(id, e) { e.stopPropagation(); state.notices = state.notices.filter(n => n.id !== id); saveStateToStorage(); }
-        // 修正彈窗開啟功能
         function openNoticeModal(mode) { document.getElementById('notice-modal').classList.remove('hidden'); }
         function closeNoticeModal() { document.getElementById('notice-modal').classList.add('hidden'); }
         function saveNoticeModal() {
