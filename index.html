@@ -72,6 +72,9 @@
                 <button onclick="changeGlobalView('toolkit')" id="nav-toolkit" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100">
                     📢 公告欄
                 </button>
+                <button onclick="changeGlobalView('leavehandoff')" id="nav-leavehandoff" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100">
+                    🌴 休假代辦
+                </button>
             </div>
         </div>
     </section>
@@ -109,20 +112,41 @@
                     <h2 class="text-lg font-bold text-slate-900">📅 團隊工作排期行事曆</h2>
                     <p class="text-sm text-slate-500 mt-0.5">匯集所有專案工作與行政任務的預計完成日。點擊姓名按鈕可快速過濾交期事項。</p>
                 </div>
-                <div class="flex flex-wrap gap-1 items-center bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs">
-                    <span class="font-bold text-slate-500 px-1">👤 人員:</span>
-                    <div class="flex flex-wrap gap-1" id="calendar-owner-pills"></div>
+                <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs">
+                    <div class="flex flex-wrap gap-1 items-center">
+                        <span class="font-bold text-slate-500 px-1 w-10">👤 人員:</span>
+                        <div class="flex flex-wrap gap-1" id="calendar-owner-pills"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-1 items-center border-t border-slate-200 pt-2">
+                        <span class="font-bold text-slate-500 px-1 w-10">🏢 客戶:</span>
+                        <div class="flex flex-wrap gap-1" id="calendar-client-pills"></div>
+                    </div>
                 </div>
             </div>
 
+            <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-wrap items-center gap-3 text-[11px] font-bold text-slate-500">
+                <span>圖例:</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-amber-400 border border-amber-500"></span> 🚀 專案上線日</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-indigo-100 border border-indigo-300"></span> 一般工作事項</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-100 border border-emerald-300"></span> 行政事項</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-rose-600"></span> 已逾期未完成</span>
+            </div>
+
             <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                <div class="flex items-center justify-between">
-                    <button onclick="moveCalendarMonth(-1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold transition-all">◀ 上個月</button>
-                    <h3 id="calendar-month-year-title" class="text-base font-black text-slate-800 tracking-wide">2026 年 06 月</h3>
-                    <button onclick="moveCalendarMonth(1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold transition-all">下個月 ▶</button>
+                <div class="flex items-center justify-between flex-wrap gap-3">
+                    <button onclick="moveCalendarPeriod(-1)" id="calendar-prev-btn" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold transition-all">◀ 上一個</button>
+                    <div class="flex items-center gap-3">
+                        <h3 id="calendar-month-year-title" class="text-base font-black text-slate-800 tracking-wide">2026 年 06 月</h3>
+                        <div class="flex gap-0.5 bg-slate-100 p-0.5 rounded-lg">
+                            <button onclick="setCalendarViewMode('day')" id="calmode-day" class="px-2.5 py-1 rounded-md text-xs font-bold transition-all">日</button>
+                            <button onclick="setCalendarViewMode('week')" id="calmode-week" class="px-2.5 py-1 rounded-md text-xs font-bold transition-all">週</button>
+                            <button onclick="setCalendarViewMode('month')" id="calmode-month" class="px-2.5 py-1 rounded-md text-xs font-bold transition-all">月</button>
+                        </div>
+                    </div>
+                    <button onclick="moveCalendarPeriod(1)" id="calendar-next-btn" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold transition-all">下一個 ▶</button>
                 </div>
 
-                <div class="grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200" id="calendar-grid-body"></div>
+                <div id="calendar-grid-body"></div>
             </div>
         </div>
 
@@ -232,7 +256,10 @@
                                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
                                 <span class="font-bold text-sm text-slate-700">已完成 Done</span>
                             </div>
-                            <span class="text-[10px] font-bold bg-emerald-100 px-2 py-0.5 rounded-full text-emerald-700" id="count-done">0</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold bg-emerald-100 px-2 py-0.5 rounded-full text-emerald-700" id="count-done">0</span>
+                                <button id="toggle-hide-done-btn" onclick="toggleHideCompletedAdmin()" class="text-[10px] font-bold px-2 py-1 rounded-lg border transition-all"></button>
+                            </div>
                         </div>
                         <div class="space-y-2.5 overflow-y-auto flex-grow" id="kanban-done"></div>
                     </div>
@@ -253,7 +280,56 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="notices-grid"></div>
         </div>
 
+        <div id="view-leavehandoff" class="global-view hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">🌴 休假代辦交接</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">同仁休假期間需要協助處理的事項都集中在這裡，每筆都能填寫處理進度與檔案路徑，方便接手的人快速上手。</p>
+                </div>
+                <button onclick="openCreateHandoffModal()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 self-start sm:self-auto">
+                    <span>➕ 新增休假代辦交接</span>
+                </button>
+            </div>
+            <div class="space-y-5" id="leavehandoff-list"></div>
+        </div>
+
     </main>
+
+    <div id="create-handoff-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto py-8">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-lg my-auto">
+            <h3 class="font-bold text-slate-900 text-sm mb-1 flex items-center gap-1.5">🌴 新增休假代辦交接</h3>
+            <p class="text-xs text-slate-500 mb-4 leading-relaxed">設定休假區間後，系統會自動列出該同仁「預計完成日落在這段期間內」的未完成事項，勾選需要交接的項目即可，不會動到區間外的其他工作。</p>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">👤 請假同仁</label>
+                    <select id="handoff-from-select" onchange="refreshHandoffPreview()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-sm font-bold text-slate-500 block mb-1">📅 休假開始日</label>
+                        <input type="date" id="handoff-start-date" onchange="refreshHandoffPreview()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500">
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-slate-500 block mb-1">📅 休假結束日</label>
+                        <input type="date" id="handoff-end-date" onchange="refreshHandoffPreview()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">🙋 代理同仁</label>
+                    <select id="handoff-to-select" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"></select>
+                    <input type="text" id="handoff-to-custom-input" placeholder="輸入代理人姓名" class="hidden w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 mt-2">
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">📦 期間內未完成事項（可取消勾選不需交接的項目）</label>
+                    <div id="handoff-items-preview" class="space-y-1.5 max-h-[240px] overflow-y-auto border border-slate-100 rounded-xl p-2.5 bg-slate-50"></div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="closeCreateHandoffModal()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm rounded-lg transition-all">取消</button>
+                    <button onclick="confirmCreateHandoff()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-lg transition-all">確認建立交接</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="campaign-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-md">
@@ -326,16 +402,18 @@
 
     <script>
         // 初始化資料庫定義
-        let state = { campaigns: [], adminTasks: [], notices: [] };
+        let state = { campaigns: [], adminTasks: [], notices: [], leaveHandoffs: [] };
         let currentOwnerFilter = 'all';
         let currentBrandFilter = 'all'; 
         let currentAdminOwnerFilter = 'all'; 
         let currentAdminClientFilter = 'all'; 
         let currentCalendarOwnerFilter = 'all'; 
+        let currentCalendarClientFilter = 'all'; // 新增：行事曆客戶篩選變數
         let editingAdminTaskId = null; // 新增：追蹤目前正在編輯中的行政事項卡片 ID
 
         // 智能行事曆時間變數
         let calendarCurrentDate = new Date(); 
+        let calendarViewMode = 'month'; // 新增：行事曆檢視模式（day/week/month）
 
         let currentModalMode = 'add';
         let activeStageIdInModal = '';
@@ -368,6 +446,24 @@
             const brands = new Set();
             if (state.campaigns) state.campaigns.forEach(c => brands.add(getBrandFromCampaignName(c.name)));
             return Array.from(brands);
+        }
+
+        // 新增：依客戶品牌名稱產生固定顏色（同一個客戶永遠是同一個顏色，不會每次重整就換色）
+        const BRAND_COLOR_PALETTE = [
+            { bg: 'bg-amber-100',   text: 'text-amber-800',   border: 'border-amber-300',   dot: 'bg-amber-500' },
+            { bg: 'bg-sky-100',     text: 'text-sky-800',     border: 'border-sky-300',     dot: 'bg-sky-500' },
+            { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800', border: 'border-fuchsia-300', dot: 'bg-fuchsia-500' },
+            { bg: 'bg-lime-100',    text: 'text-lime-800',    border: 'border-lime-300',    dot: 'bg-lime-500' },
+            { bg: 'bg-orange-100',  text: 'text-orange-800',  border: 'border-orange-300',  dot: 'bg-orange-500' },
+            { bg: 'bg-cyan-100',    text: 'text-cyan-800',    border: 'border-cyan-300',    dot: 'bg-cyan-500' },
+            { bg: 'bg-violet-100',  text: 'text-violet-800',  border: 'border-violet-300',  dot: 'bg-violet-500' },
+            { bg: 'bg-pink-100',    text: 'text-pink-800',    border: 'border-pink-300',    dot: 'bg-pink-500' },
+        ];
+        function getBrandColor(brand) {
+            let hash = 0;
+            const str = brand || '其他';
+            for (let i = 0; i < str.length; i++) { hash = (hash * 31 + str.charCodeAt(i)) >>> 0; }
+            return BRAND_COLOR_PALETTE[hash % BRAND_COLOR_PALETTE.length];
         }
 
         function getAllAdminClients() {
@@ -408,6 +504,16 @@
         }
 
         function getAllAdminOwners() { return getAllOwners(); }
+
+        // 新增：已完成事項本機隱藏開關（只存自己瀏覽器的 localStorage，不會同步給其他人，每個人可自行決定要不要看）
+        function isHideCompletedAdminOn() {
+            return localStorage.getItem('hideCompletedAdminTasks') === 'true';
+        }
+        function toggleHideCompletedAdmin() {
+            const current = isHideCompletedAdminOn();
+            localStorage.setItem('hideCompletedAdminTasks', current ? 'false' : 'true');
+            renderKanban();
+        }
 
         function formatDateStringWithDay(dateStr) {
             if (!dateStr) return '';
@@ -477,9 +583,10 @@
                     if (!state.campaigns) state.campaigns = [];
                     if (!state.adminTasks) state.adminTasks = [];
                     if (!state.notices) state.notices = [];
+                    if (!state.leaveHandoffs) state.leaveHandoffs = [];
                     state.campaigns.forEach(c => { if (!c.stages) c.stages = []; });
                 } else {
-                    state = { campaigns: [], adminTasks: [], notices: [] };
+                    state = { campaigns: [], adminTasks: [], notices: [], leaveHandoffs: [] };
                     saveStateToStorage();
                 }
                 renderUI(); 
@@ -496,7 +603,7 @@
             
             document.querySelectorAll('.nav-tab').forEach(btn => btn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100");
             const activeNav = document.getElementById('nav-' + viewName);
-            if (activeNav) activeNav.className = `nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewName === 'adminboard'?'text-emerald-700 bg-emerald-50':viewName=='calendarview'?'text-teal-700 bg-teal-50':'text-indigo-700 bg-indigo-50'}`;
+            if (activeNav) activeNav.className = `nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewName === 'adminboard'?'text-emerald-700 bg-emerald-50':viewName==='calendarview'?'text-teal-700 bg-teal-50':viewName==='leavehandoff'?'text-amber-700 bg-amber-50':'text-indigo-700 bg-indigo-50'}`;
             
             renderUI();
         }
@@ -672,6 +779,390 @@
             triggerCustomAlert("刪除行政事項", "確定要刪除此行政事項嗎？", true, () => {
                 state.adminTasks = state.adminTasks.filter(t => t.id !== taskId);
                 saveStateToStorage();
+            });
+        }
+
+        // ============================================================
+        // 新增：休假代辦交接系統
+        // 資料結構：state.leaveHandoffs = [{
+        //   id, fromOwner, toOwner, startDate, endDate, createdAt,
+        //   items: [{ id, refType:'campaign'|'admin', campaignId, stageId, itemId, taskId, statusNote, filePath }]
+        // }]
+        // 重點：完成狀態永遠直接讀取/寫入「原始工作事項」本身（不額外存一份），
+        // 所以休假代辦清單打勾＝專案總覽那邊也會直接變已完成，兩邊保證同步、不會兜不起來。
+        // ============================================================
+
+        // 將 "MM/DD" 格式的字串轉成 Date 物件（沿用全站既有的「無年份、預設今年」假設）
+        function parseMMDDToDate(dateStr) {
+            if (!dateStr || !dateStr.includes('/')) return null;
+            const parts = dateStr.split('/');
+            const d = new Date(new Date().getFullYear(), parseInt(parts[0]) - 1, parseInt(parts[1]));
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        // 找出某同仁在指定日期區間內、尚未完成的所有事項（跨專案 + 行政事項）
+        function findOwnerItemsInRange(ownerName, startDateVal, endDateVal) {
+            if (!ownerName || !startDateVal || !endDateVal) return [];
+            const lower = ownerName.toLowerCase();
+            const start = new Date(startDateVal); start.setHours(0,0,0,0);
+            const end = new Date(endDateVal); end.setHours(23,59,59,999);
+            const results = [];
+
+            state.campaigns.forEach(c => {
+                const brand = getBrandFromCampaignName(c.name);
+                (c.stages || []).forEach(s => {
+                    (s.items || []).forEach(i => {
+                        if (i.completed) return;
+                        if ((i.owner || '').toLowerCase() !== lower) return;
+                        const d = parseMMDDToDate(i.dueDate);
+                        if (!d || d < start || d > end) return;
+                        results.push({ refType: 'campaign', campaignId: c.id, stageId: s.id, itemId: i.id, text: i.text, dueDate: i.dueDate, brand: brand });
+                    });
+                });
+            });
+            state.adminTasks.forEach(t => {
+                if (t.status === 'done') return;
+                if ((t.owner || '').toLowerCase() !== lower) return;
+                const d = parseMMDDToDate(t.dueDate);
+                if (!d || d < start || d > end) return;
+                results.push({ refType: 'admin', taskId: t.id, text: t.text, dueDate: t.dueDate, brand: t.client || '通用行政' });
+            });
+            return results;
+        }
+
+        // 依參照取得「原始工作事項」的即時物件（確保兩邊資料永遠同一份，不會不同步）
+        function resolveHandoffItemRef(hoItem) {
+            if (hoItem.refType === 'campaign') {
+                const camp = state.campaigns.find(c => c.id === hoItem.campaignId);
+                if (!camp) return null;
+                const stage = (camp.stages || []).find(s => s.id === hoItem.stageId);
+                if (!stage) return null;
+                const item = (stage.items || []).find(i => i.id === hoItem.itemId);
+                if (!item) return null;
+                return { live: item, brand: getBrandFromCampaignName(camp.name), campaignName: camp.name };
+            } else {
+                const task = state.adminTasks.find(t => t.id === hoItem.taskId);
+                if (!task) return null;
+                return { live: task, brand: task.client || '通用行政', campaignName: null };
+            }
+        }
+
+        function openCreateHandoffModal() {
+            const owners = getAllOwners();
+            if (owners.length === 0) {
+                triggerCustomAlert("尚無人員資料", "目前還沒有任何工作事項指派負責人，無法建立交接。", false);
+                return;
+            }
+            const fromSelect = document.getElementById('handoff-from-select');
+            const toSelect = document.getElementById('handoff-to-select');
+            fromSelect.innerHTML = owners.map(o => `<option value="${escapeHTML(o)}">${escapeHTML(o)}</option>`).join('');
+            toSelect.innerHTML = owners.map(o => `<option value="${escapeHTML(o)}">${escapeHTML(o)}</option>`).join('') + `<option value="__custom__">✏️ 其他（手動輸入姓名）</option>`;
+            toSelect.onchange = () => {
+                const customInput = document.getElementById('handoff-to-custom-input');
+                if (toSelect.value === '__custom__') { customInput.classList.remove('hidden'); customInput.focus(); }
+                else { customInput.classList.add('hidden'); }
+            };
+            document.getElementById('handoff-to-custom-input').classList.add('hidden');
+            document.getElementById('handoff-to-custom-input').value = '';
+
+            const todayStr = getTodayString();
+            document.getElementById('handoff-start-date').value = todayStr;
+            document.getElementById('handoff-end-date').value = todayStr;
+
+            refreshHandoffPreview();
+            document.getElementById('create-handoff-modal').classList.remove('hidden');
+        }
+        function closeCreateHandoffModal() { document.getElementById('create-handoff-modal').classList.add('hidden'); }
+
+        function refreshHandoffPreview() {
+            const fromOwner = document.getElementById('handoff-from-select').value;
+            const startVal = document.getElementById('handoff-start-date').value;
+            const endVal = document.getElementById('handoff-end-date').value;
+            const previewBox = document.getElementById('handoff-items-preview');
+
+            if (!startVal || !endVal) { previewBox.innerHTML = `<p class="text-xs text-slate-400 italic p-2">請先選擇休假起訖日期。</p>`; return; }
+            if (new Date(endVal) < new Date(startVal)) { previewBox.innerHTML = `<p class="text-xs text-rose-500 italic p-2">結束日不可早於開始日。</p>`; return; }
+
+            const items = findOwnerItemsInRange(fromOwner, startVal, endVal);
+            if (items.length === 0) {
+                previewBox.innerHTML = `<p class="text-xs text-slate-400 italic p-2">這段期間內，${escapeHTML(fromOwner)} 沒有預計完成日落在範圍內的未完成事項。</p>`;
+                return;
+            }
+            previewBox.innerHTML = items.map((it, idx) => `
+                <label class="flex items-start gap-2 p-2 bg-white rounded-lg border border-slate-100 cursor-pointer hover:bg-amber-50/50">
+                    <input type="checkbox" class="handoff-item-checkbox mt-0.5" data-idx="${idx}" checked>
+                    <span class="text-xs flex-grow">
+                        <span class="font-bold text-slate-600">[${escapeHTML(it.brand)}]</span>
+                        <span class="text-slate-700">${escapeHTML(it.text)}</span>
+                        <span class="text-slate-400 block">📅 ${escapeHTML(it.dueDate)}</span>
+                    </span>
+                </label>
+            `).join('');
+            previewBox.dataset.itemsJson = JSON.stringify(items);
+        }
+
+        function confirmCreateHandoff() {
+            const fromOwner = document.getElementById('handoff-from-select').value;
+            const startVal = document.getElementById('handoff-start-date').value;
+            const endVal = document.getElementById('handoff-end-date').value;
+            const toSelect = document.getElementById('handoff-to-select');
+            let toOwner = toSelect.value === '__custom__' ? document.getElementById('handoff-to-custom-input').value.trim() : toSelect.value;
+
+            if (!startVal || !endVal) { triggerCustomAlert("未填寫完畢", "請選擇休假起訖日期！", false); return; }
+            if (new Date(endVal) < new Date(startVal)) { triggerCustomAlert("日期錯誤", "結束日不可早於開始日！", false); return; }
+            if (!toOwner) { triggerCustomAlert("未填寫完畢", "請選擇或輸入代理同仁！", false); return; }
+            if (toOwner.toLowerCase() === fromOwner.toLowerCase()) { triggerCustomAlert("無法交接", "代理人不可以跟請假同仁是同一個人喔！", false); return; }
+
+            const previewBox = document.getElementById('handoff-items-preview');
+            const allItems = JSON.parse(previewBox.dataset.itemsJson || '[]');
+            const checkedIdxs = Array.from(document.querySelectorAll('.handoff-item-checkbox:checked')).map(cb => parseInt(cb.dataset.idx));
+            const selectedItems = allItems.filter((_, idx) => checkedIdxs.includes(idx));
+
+            if (selectedItems.length === 0) { triggerCustomAlert("尚未選擇事項", "請至少勾選一筆需要交接的事項！", false); return; }
+
+            // 把選中項目的負責人改成代理同仁（這樣行事曆／看板上也會立刻看到是代理人在處理）
+            const handoffItems = selectedItems.map(it => {
+                if (it.refType === 'campaign') {
+                    const camp = state.campaigns.find(c => c.id === it.campaignId);
+                    const stage = camp && (camp.stages || []).find(s => s.id === it.stageId);
+                    const item = stage && (stage.items || []).find(i => i.id === it.itemId);
+                    if (item) item.owner = toOwner;
+                    return { id: 'hoit_' + Date.now() + Math.random().toString(36).substr(2,4), refType: 'campaign', campaignId: it.campaignId, stageId: it.stageId, itemId: it.itemId, statusNote: '', filePath: '' };
+                } else {
+                    const task = state.adminTasks.find(t => t.id === it.taskId);
+                    if (task) task.owner = toOwner;
+                    return { id: 'hoit_' + Date.now() + Math.random().toString(36).substr(2,4), refType: 'admin', taskId: it.taskId, statusNote: '', filePath: '' };
+                }
+            });
+
+            if (!state.leaveHandoffs) state.leaveHandoffs = [];
+            state.leaveHandoffs.unshift({
+                id: 'ho_' + Date.now(),
+                fromOwner: fromOwner,
+                toOwner: toOwner,
+                startDate: startVal,
+                endDate: endVal,
+                createdAt: getTodayString(),
+                items: handoffItems
+            });
+
+            saveStateToStorage();
+            closeCreateHandoffModal();
+            changeGlobalView('leavehandoff');
+        }
+
+        function toggleHandoffItemComplete(itemId) {
+            // 直接操作原始工作事項的完成狀態，因此這裡打勾＝專案總覽那邊也會同步顯示已完成
+            for (const ho of (state.leaveHandoffs || [])) {
+                const hoItem = ho.items.find(i => i.id === itemId);
+                if (!hoItem) continue;
+                const ref = resolveHandoffItemRef(hoItem);
+                if (!ref) return;
+                if (hoItem.refType === 'campaign') {
+                    ref.live.completed = !ref.live.completed;
+                    ref.live.status = ref.live.completed ? "已完成" : "進行中";
+                } else {
+                    ref.live.status = (ref.live.status === 'done') ? 'todo' : 'done';
+                }
+                saveStateToStorage();
+                renderUI();
+                return;
+            }
+        }
+
+        function saveHandoffItemNote(itemId, value) {
+            for (const ho of (state.leaveHandoffs || [])) {
+                const hoItem = ho.items.find(i => i.id === itemId);
+                if (hoItem) { hoItem.statusNote = value; saveStateToStorage(); return; }
+            }
+        }
+
+        // 新增：快速切換工作事項目前的負責人（休假期間如果事情緊急沒辦法等同仁休完假，可以隨時轉回原本同仁，或轉回代理人）
+        function setHandoffItemOwner(itemId, ownerName) {
+            for (const ho of (state.leaveHandoffs || [])) {
+                const hoItem = ho.items.find(i => i.id === itemId);
+                if (!hoItem) continue;
+                const ref = resolveHandoffItemRef(hoItem);
+                if (!ref) return;
+                ref.live.owner = ownerName;
+                saveStateToStorage();
+                renderUI();
+                return;
+            }
+        }
+        function saveHandoffItemFilePath(itemId, value) {
+            for (const ho of (state.leaveHandoffs || [])) {
+                const hoItem = ho.items.find(i => i.id === itemId);
+                if (hoItem) { hoItem.filePath = value; saveStateToStorage(); return; }
+            }
+        }
+
+        function copyFilePathToClipboard(btnEl, value) {
+            if (!value) { triggerCustomAlert("尚未填寫", "這筆事項還沒有填寫檔案路徑喔！", false); return; }
+            const fallbackCopy = () => {
+                const tmp = document.createElement('textarea');
+                tmp.value = value; tmp.style.position = 'fixed'; tmp.style.opacity = '0';
+                document.body.appendChild(tmp); tmp.focus(); tmp.select();
+                try { document.execCommand('copy'); } catch(e) {}
+                document.body.removeChild(tmp);
+            };
+            const showCopied = () => {
+                const original = btnEl.textContent;
+                btnEl.textContent = '✅ 已複製';
+                setTimeout(() => { btnEl.textContent = original; }, 1500);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(value).then(showCopied).catch(() => { fallbackCopy(); showCopied(); });
+            } else {
+                fallbackCopy(); showCopied();
+            }
+        }
+
+        function removeHandoffItem(handoffId, itemId, e) {
+            if (e) e.stopPropagation();
+            triggerCustomAlert("移除此筆交接事項", "只會把這筆從休假代辦清單移除，不會刪除原本的工作事項。", true, () => {
+                const ho = (state.leaveHandoffs || []).find(h => h.id === handoffId);
+                if (ho) { ho.items = ho.items.filter(i => i.id !== itemId); saveStateToStorage(); renderUI(); }
+            });
+        }
+
+        function deleteHandoffRecord(handoffId) {
+            const ho = (state.leaveHandoffs || []).find(h => h.id === handoffId);
+            if (!ho) return;
+            triggerCustomAlert("結束此次休假代辦", `確定要結束「${escapeHTML(ho.fromOwner)} → ${escapeHTML(ho.toOwner)}」這次交接嗎？這只會移除交接紀錄卡片，不會動到任何工作事項目前的負責人或完成狀態。`, true, () => {
+                state.leaveHandoffs = (state.leaveHandoffs || []).filter(h => h.id !== handoffId);
+                saveStateToStorage();
+                renderUI();
+            });
+        }
+
+        function renderLeaveHandoffBoard() {
+            const grid = document.getElementById('leavehandoff-list'); if (!grid) return;
+            grid.innerHTML = '';
+            const handoffs = state.leaveHandoffs || [];
+            if (handoffs.length === 0) {
+                grid.innerHTML = `<div class="text-center py-16 text-slate-400 bg-white border border-dashed rounded-2xl">目前沒有進行中的休假代辦交接，點選右上角「新增休假代辦交接」開始建立。</div>`;
+                return;
+            }
+
+            handoffs.forEach(ho => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-amber-100 shadow-sm overflow-hidden";
+
+                // 新增：依專案分組（同一個專案的事項放一起，而非平鋪散開），行政事項另外獨立分一組
+                const groups = []; // [{key, label, brand, items:[hoItem,...]}]
+                const groupIndexMap = {};
+                (ho.items || []).forEach(hoItem => {
+                    const ref = resolveHandoffItemRef(hoItem);
+                    let key, label, brand;
+                    if (!ref) { key = '__deleted__'; label = '⚠️ 原始事項已被刪除'; brand = ''; }
+                    else if (hoItem.refType === 'campaign') { key = hoItem.campaignId; label = ref.campaignName; brand = ref.brand; }
+                    else { key = '__admin__'; label = '📋 日常行政事務'; brand = '通用行政'; }
+
+                    if (!(key in groupIndexMap)) {
+                        groupIndexMap[key] = groups.length;
+                        groups.push({ key, label, brand, items: [] });
+                    }
+                    groups[groupIndexMap[key]].items.push(hoItem);
+                });
+
+                let itemsHtml = '';
+                if (groups.length === 0) {
+                    itemsHtml = `<p class="text-xs text-slate-400 italic p-3">此次交接沒有任何事項。</p>`;
+                } else {
+                    groups.forEach(group => {
+                        const gColor = group.brand ? getBrandColor(group.brand) : null;
+                        itemsHtml += `
+                            <div class="px-3.5 pt-3 pb-1.5 bg-slate-50/70 border-b border-slate-100 flex items-center gap-1.5 sticky top-0">
+                                ${gColor ? `<span class="w-2 h-2 rounded-full ${gColor.dot}"></span>` : ''}
+                                <span class="text-xs font-black text-slate-600">${escapeHTML(group.label)}</span>
+                            </div>`;
+
+                        group.items.forEach(hoItem => {
+                            const ref = resolveHandoffItemRef(hoItem);
+                            if (!ref) {
+                                itemsHtml += `
+                                    <div class="p-3 border-b border-slate-50 last:border-0 bg-slate-50/50">
+                                        <p class="text-xs text-slate-400 italic">⚠️ 原始工作事項已被刪除，這筆交接紀錄可以移除了。</p>
+                                        <button onclick="removeHandoffItem('${ho.id}','${hoItem.id}',event)" class="text-[10px] text-rose-400 hover:text-rose-600 font-bold mt-1">移除此筆</button>
+                                    </div>`;
+                                return;
+                            }
+                            const live = ref.live;
+                            const isCompleted = hoItem.refType === 'campaign' ? !!live.completed : (live.status === 'done');
+                            const text = live.text;
+                            const dueDate = live.dueDate;
+                            const currentOwner = live.owner || '未指定';
+
+                            // 新增：目前負責人快速切換（休假期間若需要把事項臨時轉回原同仁處理，這裡一鍵切換即可，不影響其他資料）
+                            const isOnFrom = currentOwner.toLowerCase() === ho.fromOwner.toLowerCase();
+                            const isOnTo = currentOwner.toLowerCase() === ho.toOwner.toLowerCase();
+                            let ownerSwitcherHtml = `
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] font-bold text-slate-400">👤 目前負責：</span>
+                                    <button onclick="setHandoffItemOwner('${hoItem.id}','${escapeHTML(ho.fromOwner)}')" class="text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all ${isOnFrom ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}">${escapeHTML(ho.fromOwner)}${isOnFrom?' (本人)':''}</button>
+                                    <span class="text-slate-300 text-[10px]">/</span>
+                                    <button onclick="setHandoffItemOwner('${hoItem.id}','${escapeHTML(ho.toOwner)}')" class="text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all ${isOnTo ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-slate-500 border-slate-200 hover:bg-amber-50'}">${escapeHTML(ho.toOwner)}${isOnTo?' (代理人)':''}</button>
+                                    ${(!isOnFrom && !isOnTo) ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">${escapeHTML(currentOwner)} (其他)</span>` : ''}
+                                </div>`;
+
+                            itemsHtml += `
+                                <div class="p-3.5 border-b border-slate-50 last:border-0 ${isCompleted ? 'bg-emerald-50/40' : ''}">
+                                    <div class="flex items-start gap-2.5">
+                                        <input type="checkbox" ${isCompleted?'checked':''} onclick="toggleHandoffItemComplete('${hoItem.id}')" class="w-4 h-4 mt-0.5 rounded text-emerald-600 cursor-pointer shrink-0">
+                                        <div class="flex-grow min-w-0">
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="text-[10px] font-bold text-slate-400">📅 ${escapeHTML(dueDate || '無日期')}</span>
+                                                ${isCompleted ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">✅ 已完成（與專案總覽同步）</span>` : ''}
+                                            </div>
+                                            <p class="text-sm font-semibold mt-1 ${isCompleted?'line-through text-slate-400 font-normal':'text-slate-800'}">${escapeHTML(text)}</p>
+
+                                            <div class="mt-2">${ownerSwitcherHtml}</div>
+
+                                            <div class="mt-2 space-y-1.5">
+                                                <div>
+                                                    <label class="text-[10px] font-bold text-slate-400 block mb-0.5">📝 狀況說明（最後處理進度／等誰回覆或提供資料）</label>
+                                                    <textarea rows="2" placeholder="例如：素材已寄給客戶，等對方週三前回覆確認稿..." onblur="saveHandoffItemNote('${hoItem.id}', this.value)" class="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none">${escapeHTML(hoItem.statusNote || '')}</textarea>
+                                                </div>
+                                                <div class="flex gap-1.5 items-end">
+                                                    <div class="flex-grow">
+                                                        <label class="text-[10px] font-bold text-slate-400 block mb-0.5">📁 檔案路徑（公槽路徑或連結）</label>
+                                                        <input type="text" id="filepath-${hoItem.id}" value="${escapeHTML(hoItem.filePath || '')}" placeholder="例如：\\\\公槽\\McDonald\\2026_週年慶\\素材" onblur="saveHandoffItemFilePath('${hoItem.id}', this.value)" class="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400">
+                                                    </div>
+                                                    <button onclick="copyFilePathToClipboard(this, document.getElementById('filepath-${hoItem.id}').value)" class="text-[10px] font-bold px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg shrink-0 transition-all">📋 複製</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button onclick="removeHandoffItem('${ho.id}','${hoItem.id}',event)" class="text-slate-300 hover:text-rose-600 font-black text-sm shrink-0">&times;</button>
+                                    </div>
+                                </div>`;
+                        });
+                    });
+                }
+
+                const totalCount = (ho.items || []).length;
+                const doneCount = (ho.items || []).filter(hoItem => {
+                    const ref = resolveHandoffItemRef(hoItem);
+                    if (!ref) return false;
+                    return hoItem.refType === 'campaign' ? !!ref.live.completed : (ref.live.status === 'done');
+                }).length;
+
+                card.innerHTML = `
+                    <div class="bg-amber-50/60 border-b border-amber-100 p-4 flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-sm font-black text-slate-800">👤 ${escapeHTML(ho.fromOwner)}</span>
+                            <span class="text-slate-400">➡</span>
+                            <span class="text-sm font-black text-amber-700">🙋 ${escapeHTML(ho.toOwner)}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-amber-200 text-amber-700 ml-1">📅 ${formatDateStringWithDay(ho.startDate)} ～ ${formatDateStringWithDay(ho.endDate)}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-bold text-slate-500">完成進度 ${doneCount}/${totalCount}</span>
+                            <button onclick="deleteHandoffRecord('${ho.id}')" class="text-[10px] font-bold px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 rounded-lg transition-all">結束此次代辦</button>
+                        </div>
+                    </div>
+                    <div>${itemsHtml}</div>
+                `;
+                grid.appendChild(card);
             });
         }
 
@@ -897,6 +1388,13 @@
             
             Object.keys(cols).forEach(k => cols[k].innerHTML = ''); let counts = { todo:0, done:0 };
 
+            const hideDone = isHideCompletedAdminOn();
+            const toggleBtn = document.getElementById('toggle-hide-done-btn');
+            if (toggleBtn) {
+                toggleBtn.textContent = hideDone ? '👁️ 顯示已完成' : '🙈 隱藏已完成';
+                toggleBtn.className = `text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${hideDone ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`;
+            }
+
             state.adminTasks.forEach(task => {
                 // 修正：補上 owner 安全檢查，避免缺漏負責人欄位的舊資料造成整個函式中斷
                 if (currentAdminOwnerFilter !== 'all' && (task.owner || '').toLowerCase() !== currentAdminOwnerFilter.toLowerCase()) return;
@@ -961,12 +1459,106 @@
                 if (cols[status]) cols[status].appendChild(card);
             });
             document.getElementById('count-todo').textContent = counts.todo; document.getElementById('count-done').textContent = counts.done;
+
+            // 隱藏已完成開啟時，把已完成欄位內容換成提示文字（資料還在，只是這個瀏覽器選擇不顯示）
+            // 例外：如果正在編輯的卡片剛好在已完成欄位，維持顯示編輯表單，避免編輯到一半畫面消失
+            const editingTaskIsDone = editingAdminTaskId && (() => {
+                const t = state.adminTasks.find(t => t.id === editingAdminTaskId);
+                return t && (t.status === 'done');
+            })();
+            if (hideDone && !editingTaskIsDone) {
+                cols.done.innerHTML = counts.done > 0
+                    ? `<div class="text-center py-10 text-slate-400 text-xs">🙈 已隱藏 ${counts.done} 筆已完成事項<br><span class="text-[10px]">（僅此瀏覽器看不到，資料仍在雲端，其他同仁不受影響）</span></div>`
+                    : `<div class="text-center py-10 text-slate-300 text-xs">目前沒有已完成事項</div>`;
+            }
         }
 
         // 🔥 核心修正：行事曆人員篩選 — 補上 owner 安全檢查，避免缺漏負責人欄位的資料造成整個函式中斷（這就是篩選一點就全空白的真正原因）
+
+        // 新增：產生事件清單（共用邏輯，不分日/週/月都用這份）
+        function buildCalendarEvents() {
+            let events = [];
+            state.campaigns.forEach(c => {
+                if (!c.launchDate) return;
+                const brand = getBrandFromCampaignName(c.name);
+                if (currentCalendarClientFilter !== 'all' && brand !== currentCalendarClientFilter) return;
+                const parts = c.launchDate.split('-');
+                const dateStr = `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+                events.push({ type: 'launch', brand: brand, text: `🚀 ${c.name} 上線`, owner: '', dateStr: dateStr, completed: false });
+            });
+            state.campaigns.forEach(c => {
+                const brand = getBrandFromCampaignName(c.name);
+                if (currentCalendarClientFilter !== 'all' && brand !== currentCalendarClientFilter) return;
+                (c.stages || []).forEach(s => {
+                    (s.items || []).forEach(i => {
+                        if (currentCalendarOwnerFilter !== 'all' && (i.owner || '').toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!i.dueDate) return;
+                        events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner || '未指定', dateStr: i.dueDate, completed: i.completed });
+                    });
+                });
+            });
+            state.adminTasks.forEach(t => {
+                if (currentCalendarClientFilter !== 'all' && (t.client || '') !== currentCalendarClientFilter) return;
+                if (currentCalendarOwnerFilter !== 'all' && (t.owner || '').toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!t.dueDate || t.dueDate === '無截止日') return;
+                events.push({ type: 'admin', brand: t.client, text: t.text, owner: t.owner || '未指定', dateStr: t.dueDate, completed: t.status==='done' });
+            });
+            return events;
+        }
+
+        function getEventsForDate(events, dateObj) {
+            const m = dateObj.getMonth() + 1, d = dateObj.getDate();
+            const formatA = `${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
+            const formatB = `${m}/${d}`;
+            const dayEvents = events.filter(e => e.dateStr === formatA || e.dateStr === formatB);
+            dayEvents.sort((a, b) => (a.type === 'launch' ? -1 : 0) - (b.type === 'launch' ? -1 : 0));
+            return dayEvents;
+        }
+
+        function buildEventBadge(ev, compact) {
+            const evBox = document.createElement('div');
+            if (ev.type === 'launch') {
+                const bColor = getBrandColor(ev.brand);
+                evBox.className = `event-badge text-[10px] px-1.5 py-1 rounded-full border-2 leading-tight select-none cursor-pointer font-black shadow-sm ${bColor.bg} ${bColor.text} ${bColor.border}`;
+                evBox.innerHTML = `🚀 ${escapeHTML(ev.brand)} 上線`;
+            } else {
+                const isOver = checkIsOverdue(ev.dateStr, ev.completed);
+                evBox.className = `event-badge text-[11px] p-1.5 rounded border leading-snug ${compact ? 'line-clamp-2' : ''} select-none cursor-pointer transition-all ${ev.completed?'bg-slate-100 text-slate-400 border-slate-200 line-through': isOver?'bg-rose-600 text-white border-rose-700 font-bold animate-pulse': ev.type==='admin'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-indigo-50 text-indigo-700 border-indigo-200'}`;
+                evBox.innerHTML = compact
+                    ? `<strong>[${escapeHTML(ev.brand)}]</strong> ${escapeHTML(ev.text)}`
+                    : `<strong>[${escapeHTML(ev.brand)}]</strong> ${escapeHTML(ev.text)} <span class="opacity-70">— 👤 ${escapeHTML(ev.owner)}</span>`;
+            }
+            evBox.onclick = (e) => { e.stopPropagation(); openCalendarDetailModal(ev); };
+            return evBox;
+        }
+
+        function setCalendarViewMode(mode) {
+            calendarViewMode = mode;
+            renderIntelligenceCalendar();
+        }
+
+        function updateCalendarModeButtons() {
+            ['day','week','month'].forEach(m => {
+                const btn = document.getElementById('calmode-' + m);
+                if (btn) btn.className = `px-2.5 py-1 rounded-md text-xs font-bold transition-all ${calendarViewMode===m ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:bg-white'}`;
+            });
+            const prevBtn = document.getElementById('calendar-prev-btn');
+            const nextBtn = document.getElementById('calendar-next-btn');
+            const labelMap = { day: ['◀ 前一天','後一天 ▶'], week: ['◀ 上一週','下一週 ▶'], month: ['◀ 上個月','下個月 ▶'] };
+            if (prevBtn) prevBtn.textContent = labelMap[calendarViewMode][0];
+            if (nextBtn) nextBtn.textContent = labelMap[calendarViewMode][1];
+        }
+
+        function moveCalendarPeriod(dir) {
+            if (calendarViewMode === 'month') calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + dir);
+            else if (calendarViewMode === 'week') calendarCurrentDate.setDate(calendarCurrentDate.getDate() + dir * 7);
+            else calendarCurrentDate.setDate(calendarCurrentDate.getDate() + dir);
+            renderIntelligenceCalendar();
+        }
+
         function renderIntelligenceCalendar() {
             const container = document.getElementById('calendar-grid-body'); if (!container) return;
-            const titleEl = document.getElementById('calendar-month-year-title'); const ownerContainer = document.getElementById('calendar-owner-pills');
+            const titleEl = document.getElementById('calendar-month-year-title'); 
+            const ownerContainer = document.getElementById('calendar-owner-pills');
+            const clientContainer = document.getElementById('calendar-client-pills');
 
             const allStaff = getAllOwners();
             ownerContainer.innerHTML = `<button onclick="currentCalendarOwnerFilter='all';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter==='all'?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">全部</button>`;
@@ -974,6 +1566,24 @@
                 ownerContainer.innerHTML += `<button onclick="currentCalendarOwnerFilter='${st}';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarOwnerFilter.toLowerCase()===st.toLowerCase()?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">${st}</button>`;
             });
 
+            const allClientsSet = new Set([...getAllBrands(), ...getAllAdminClients()]);
+            const allClients = Array.from(allClientsSet);
+            clientContainer.innerHTML = `<button onclick="currentCalendarClientFilter='all';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded ${currentCalendarClientFilter==='all'?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}">全部</button>`;
+            allClients.forEach(cl => {
+                const cColor = getBrandColor(cl);
+                clientContainer.innerHTML += `<button onclick="currentCalendarClientFilter='${cl}';renderIntelligenceCalendar();" class="px-2 py-0.5 rounded flex items-center gap-1 ${currentCalendarClientFilter===cl?'bg-teal-600 text-white':'bg-slate-200 text-slate-600'}"><span class="w-1.5 h-1.5 rounded-full ${cColor.dot}"></span>${escapeHTML(cl)}</button>`;
+            });
+
+            updateCalendarModeButtons();
+            const events = buildCalendarEvents();
+
+            if (calendarViewMode === 'day') renderCalendarDayView(container, titleEl, events);
+            else if (calendarViewMode === 'week') renderCalendarWeekView(container, titleEl, events);
+            else renderCalendarMonthView(container, titleEl, events);
+        }
+
+        function renderCalendarMonthView(container, titleEl, events) {
+            container.className = "grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200";
             const year = calendarCurrentDate.getFullYear(); const month = calendarCurrentDate.getMonth();
             titleEl.textContent = `${year} 年 ${String(month + 1).padStart(2, '0')} 月`;
 
@@ -984,26 +1594,10 @@
             const firstDayIndex = new Date(year, month, 1).getDay(); const totalDays = new Date(year, month + 1, 0).getDate();
             for (let i = 0; i < firstDayIndex; i++) { const emptyCell = document.createElement('div'); emptyCell.className = "bg-slate-50 min-h-[100px]"; container.appendChild(emptyCell); }
 
-            let events = [];
-            state.campaigns.forEach(c => {
-                const brand = getBrandFromCampaignName(c.name);
-                (c.stages || []).forEach(s => {
-                    (s.items || []).forEach(i => {
-                        // 修正：(i.owner || '') 避免 owner 為 undefined 時整個函式崩潰
-                        if (currentCalendarOwnerFilter !== 'all' && (i.owner || '').toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!i.dueDate) return;
-                        events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner || '未指定', dateStr: i.dueDate, completed: i.completed });
-                    });
-                });
-            });
-            state.adminTasks.forEach(t => {
-                // 修正：(t.owner || '') 避免 owner 為 undefined 時整個函式崩潰
-                if (currentCalendarOwnerFilter !== 'all' && (t.owner || '').toLowerCase() !== currentCalendarOwnerFilter.toLowerCase()) return; if (!t.dueDate || t.dueDate === '無截止日') return;
-                events.push({ type: 'admin', brand: t.client, text: t.text, owner: t.owner || '未指定', dateStr: t.dueDate, completed: t.status==='done' });
-            });
-
             for (let day = 1; day <= totalDays; day++) {
+                const dateObj = new Date(year, month, day);
                 const dayCell = document.createElement('div'); dayCell.className = "bg-white min-h-[110px] p-1 border-t border-slate-100 flex flex-col justify-between overflow-hidden hover:bg-slate-50/50 cursor-pointer relative group transition-all duration-200";
-                
+
                 dayCell.onclick = function(e) {
                     if(e.target !== this && e.target.closest('.event-badge')) return; 
                     const listContainer = this.querySelector('.list-container');
@@ -1014,42 +1608,110 @@
                     }
                 };
 
-                // 不管前置補零或不補零，兩種格式 `06/30` 和 `6/30` 同時精準比對捕捉
-                const formatA = `${String(month + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
-                const formatB = `${month + 1}/${day}`;
                 const isToday = (new Date().getFullYear()===year && new Date().getMonth()===month && new Date().getDate()===day);
-                
                 const numLabel = document.createElement('span'); numLabel.className = `text-xs font-black px-1.5 py-0.5 rounded-md self-start ${isToday?'bg-teal-600 text-white':'text-slate-400'}`; numLabel.textContent = day; dayCell.appendChild(numLabel);
                 const listContainer = document.createElement('div'); listContainer.className = "list-container space-y-1 mt-1 flex-grow overflow-y-auto max-h-[85px] pr-0.5 transition-all duration-200";
 
-                const dayEvents = events.filter(e => e.dateStr === formatA || e.dateStr === formatB);
-                dayEvents.forEach(ev => {
-                    const evBox = document.createElement('div'); const isOver = checkIsOverdue(ev.dateStr, ev.completed);
-                    evBox.className = `event-badge text-[10px] p-1 rounded border leading-tight line-clamp-2 select-none cursor-pointer transition-all ${ev.completed?'bg-slate-100 text-slate-400 border-slate-200 line-through': isOver?'bg-rose-600 text-white border-rose-700 font-bold animate-pulse': ev.type==='admin'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-indigo-50 text-indigo-700 border-indigo-200'}`;
-                    evBox.innerHTML = `<strong>[${escapeHTML(ev.brand)}]</strong> ${escapeHTML(ev.text)}`;
-                    
-                    evBox.onclick = (e) => { e.stopPropagation(); openCalendarDetailModal(ev); };
-                    listContainer.appendChild(evBox);
-                });
+                getEventsForDate(events, dateObj).forEach(ev => listContainer.appendChild(buildEventBadge(ev, true)));
                 dayCell.appendChild(listContainer); container.appendChild(dayCell);
             }
         }
 
+        function getWeekStart(d) {
+            const nd = new Date(d); nd.setHours(0,0,0,0); nd.setDate(nd.getDate() - nd.getDay()); return nd;
+        }
+
+        function renderCalendarWeekView(container, titleEl, events) {
+            container.className = "grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200";
+            const weekStart = getWeekStart(calendarCurrentDate);
+            const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+            const fmt = (d) => `${d.getMonth()+1}/${d.getDate()}`;
+            titleEl.textContent = `${weekStart.getFullYear()} 年 第 ${getISOWeekNumber(weekStart)} 週（${fmt(weekStart)} ～ ${fmt(weekEnd)}）`;
+
+            container.innerHTML = '';
+            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            const today = new Date();
+
+            for (let i = 0; i < 7; i++) {
+                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
+                const isToday = dateObj.toDateString() === today.toDateString();
+                const headerCell = document.createElement('div');
+                headerCell.className = `p-2 text-center text-xs font-bold ${isToday ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`;
+                headerCell.innerHTML = `${weekdays[i]}<div class="text-[10px] font-normal">${dateObj.getMonth()+1}/${dateObj.getDate()}</div>`;
+                container.appendChild(headerCell);
+            }
+
+            for (let i = 0; i < 7; i++) {
+                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
+                const dayCell = document.createElement('div'); dayCell.className = "bg-white min-h-[320px] p-1.5 border-t border-slate-100 flex flex-col gap-1 overflow-y-auto";
+                const dayEvents = getEventsForDate(events, dateObj);
+                if (dayEvents.length === 0) {
+                    dayCell.innerHTML = `<span class="text-[10px] text-slate-300 italic text-center mt-4">無事項</span>`;
+                } else {
+                    dayEvents.forEach(ev => dayCell.appendChild(buildEventBadge(ev, false)));
+                }
+                container.appendChild(dayCell);
+            }
+        }
+
+        function getISOWeekNumber(d) {
+            const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+            const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+            return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+        }
+
+        function renderCalendarDayView(container, titleEl, events) {
+            container.className = "block";
+            const dateObj = calendarCurrentDate;
+            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            titleEl.textContent = `${dateObj.getFullYear()} 年 ${dateObj.getMonth()+1} 月 ${dateObj.getDate()} 日（${weekdays[dateObj.getDay()]}）`;
+
+            container.innerHTML = '';
+            const dayEvents = getEventsForDate(events, dateObj);
+            if (dayEvents.length === 0) {
+                container.innerHTML = `<div class="text-center py-16 text-slate-300 bg-slate-50 rounded-xl border border-dashed">這一天沒有任何事項或上線日。</div>`;
+                return;
+            }
+            const list = document.createElement('div');
+            list.className = "space-y-2 max-h-[500px] overflow-y-auto pr-1";
+            dayEvents.forEach(ev => {
+                const badge = buildEventBadge(ev, false);
+                badge.className += " !text-sm !p-3";
+                list.appendChild(badge);
+            });
+            container.appendChild(list);
+        }
+
         function openCalendarDetailModal(ev) {
             const body = document.getElementById('calendar-detail-modal-body');
-            body.innerHTML = `
-                <div class="space-y-2.5">
-                    <div><span class="text-xs font-bold text-slate-400 block">🏢 所屬品牌客戶別</span><span class="text-sm font-black text-slate-800">${escapeHTML(ev.brand)}</span></div>
-                    <div><span class="text-xs font-bold text-slate-400 block">✍️ 工作事項完整內容</span><span class="text-sm font-medium text-slate-700 leading-relaxed block bg-slate-50 p-2.5 rounded-xl border border-slate-100">${escapeHTML(ev.text)}</span></div>
-                    <div><span class="text-xs font-bold text-slate-400 block">👤 負責同仁</span><span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">👤 ${escapeHTML(ev.owner)}</span></div>
-                    <div><span class="text-xs font-bold text-slate-400 block">📊 當前狀態</span><span class="text-xs font-bold px-2 py-0.5 rounded ${ev.completed?'bg-slate-100 text-slate-500':'bg-amber-50 text-amber-700'}">${ev.completed?'已完成 Finished':'待處理 Pending'}</span></div>
-                </div>
-            `;
+            if (ev.type === 'launch') {
+                const bColor = getBrandColor(ev.brand);
+                body.innerHTML = `
+                    <div class="space-y-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🚀</span>
+                            <span class="text-sm font-black px-2 py-1 rounded-full ${bColor.bg} ${bColor.text} border-2 ${bColor.border}">專案上線日</span>
+                        </div>
+                        <div><span class="text-xs font-bold text-slate-400 block">🏢 客戶品牌</span><span class="text-sm font-black text-slate-800">${escapeHTML(ev.brand)}</span></div>
+                        <div><span class="text-xs font-bold text-slate-400 block">📌 專案名稱</span><span class="text-sm font-medium text-slate-700 leading-relaxed block bg-slate-50 p-2.5 rounded-xl border border-slate-100">${escapeHTML(ev.text.replace('🚀 ','').replace(' 上線',''))}</span></div>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = `
+                    <div class="space-y-2.5">
+                        <div><span class="text-xs font-bold text-slate-400 block">🏢 所屬品牌客戶別</span><span class="text-sm font-black text-slate-800">${escapeHTML(ev.brand)}</span></div>
+                        <div><span class="text-xs font-bold text-slate-400 block">✍️ 工作事項完整內容</span><span class="text-sm font-medium text-slate-700 leading-relaxed block bg-slate-50 p-2.5 rounded-xl border border-slate-100">${escapeHTML(ev.text)}</span></div>
+                        <div><span class="text-xs font-bold text-slate-400 block">👤 負責同仁</span><span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">👤 ${escapeHTML(ev.owner)}</span></div>
+                        <div><span class="text-xs font-bold text-slate-400 block">📊 當前狀態</span><span class="text-xs font-bold px-2 py-0.5 rounded ${ev.completed?'bg-slate-100 text-slate-500':'bg-amber-50 text-amber-700'}">${ev.completed?'已完成 Finished':'待處理 Pending'}</span></div>
+                    </div>
+                `;
+            }
             document.getElementById('calendar-detail-modal').classList.remove('hidden');
         }
 
         function closeCalendarDetailModal() { document.getElementById('calendar-detail-modal').classList.add('hidden'); }
-        function moveCalendarMonth(dir) { calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + dir); renderIntelligenceCalendar(); }
+        
 
         function renderUI() {
             let overdueCount = 0;
@@ -1063,6 +1725,7 @@
             else if (currentGlobalView === 'campaign-detail') renderCampaignCampaignDetails(active);
             else if (currentGlobalView === 'calendarview') renderIntelligenceCalendar();
             else if (currentGlobalView === 'toolkit') renderNotices();
+            else if (currentGlobalView === 'leavehandoff') renderLeaveHandoffBoard();
             renderKanban();
         }
 
