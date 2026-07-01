@@ -732,8 +732,15 @@
             });
         }
 
-        // 從 Google 登入頁跳轉回來後，接住可能發生的錯誤（例如使用者在 Google 那邊取消了登入）
-        auth.getRedirectResult().catch((error) => {
+        // 用一個旗標追蹤「是否已確認過跳轉結果」，避免 onAuthStateChanged 在 getRedirectResult 完成前
+        // 就收到 null 然後把畫面切回登入頁（這是跳轉登入後頁面重載時的典型時序問題）
+        let redirectResultChecked = false;
+
+        auth.getRedirectResult().then((result) => {
+            redirectResultChecked = true;
+            // result.user 有值代表剛從 Google 登入頁跳轉回來，onAuthStateChanged 會接手後續流程
+        }).catch((error) => {
+            redirectResultChecked = true;
             console.error('登入跳轉處理失敗:', error);
             renderAuthGateLogin();
             const errEl = document.getElementById('auth-gate-error');
@@ -747,6 +754,8 @@
         // 監聽登入狀態變化：未登入 -> 顯示登入畫面；已登入 -> 檢查許可名單
         auth.onAuthStateChanged((user) => {
             if (!user) {
+                // 跳轉結果還沒確認完之前先不顯示登入畫面，等 getRedirectResult 完成後再判斷
+                if (!redirectResultChecked) return;
                 currentUserEmail = null; currentUserName = null; currentUserIsAdmin = false;
                 renderAuthGateLogin();
                 return;
