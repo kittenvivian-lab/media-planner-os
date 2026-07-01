@@ -783,6 +783,10 @@
             if (result && result.user) handleAuthenticatedUser(result.user);
         }).catch((error) => {
             console.error('登入跳轉處理失敗:', error);
+            // 把錯誤顯示在畫面上，不只藏在 console，方便直接看到問題
+            renderAuthGateLogin();
+            const errEl = document.getElementById('auth-gate-error');
+            if (errEl) errEl.textContent = '⚠️ ' + error.code + '：' + error.message;
         });
 
         auth.onAuthStateChanged((user) => {
