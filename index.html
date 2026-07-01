@@ -733,17 +733,19 @@
         }
 
         // ── 登入驗證核心流程 ──────────────────────────────────────────
-        // 設計原則：
-        // 1. getRedirectResult → 專門處理「從 Google 登入頁跳轉回來」這個情境
-        // 2. onAuthStateChanged → 處理「已登入狀態」和「登出」
-        // 3. 用 processedUid 避免同一個使用者被重複處理（兩個流程可能都帶著同一個 user 進來）
+        // Firebase signInWithRedirect 的已知行為：頁面重載後，onAuthStateChanged 會先傳 null，
+        // 等 Firebase 內部處理完跳轉結果後，才會再傳一次真正的 user。
+        // 為了避免那個假的 null 觸發登入畫面，策略是：
+        // - 第一次收到 null 時，等一段時間看看 user 會不會進來
+        // - 如果曾經看過 user，之後的 null 才代表真正的登出，立即顯示登入畫面
         let processedUid = null;
-        let redirectChecked = false;
+        let firstUserSeen = false; // 記錄是否曾經成功取得過登入的 user
 
         function handleAuthenticatedUser(user) {
             if (!user) return;
-            if (processedUid === user.uid) return; // 已經處理過這個使用者了，跳過
+            if (processedUid === user.uid) return;
             processedUid = user.uid;
+            firstUserSeen = true;
 
             renderAuthGateLoading();
             const email = (user.email || '').toLowerCase();
@@ -751,7 +753,7 @@
             db.collection('allowedUsers').doc(email).get().then((doc) => {
                 const isSuperAdmin = email === SUPER_ADMIN_EMAIL;
                 if (!doc.exists && !isSuperAdmin) {
-                    processedUid = null; // 不在名單裡，重設讓下次可以重新判斷
+                    processedUid = null;
                     renderAuthGateDenied(email);
                     return;
                 }
@@ -769,39 +771,37 @@
             }).catch((error) => {
                 processedUid = null;
                 console.error('檢查許可名單失敗:', error);
-                renderAuthGateDenied(email);
+                // 顯示詳細錯誤在登入畫面，方便除錯
+                renderAuthGateLogin();
+                const errEl = document.getElementById('auth-gate-error');
+                if (errEl) errEl.textContent = '讀取許可名單失敗，請確認 Firestore 規則設定（' + error.message + '）';
             });
         }
 
-        // 步驟 1：先處理從 Google 登入頁跳轉回來的情境
+        // getRedirectResult 作為輔助：如果它先拿到 user，直接處理，不等 onAuthStateChanged
         auth.getRedirectResult().then((result) => {
-            redirectChecked = true;
-            if (result && result.user) {
-                handleAuthenticatedUser(result.user);
-            }
-            // 沒有 redirect result 不需要做任何事，onAuthStateChanged 會接手
+            if (result && result.user) handleAuthenticatedUser(result.user);
         }).catch((error) => {
-            redirectChecked = true;
             console.error('登入跳轉處理失敗:', error);
-            // 錯誤的話讓 onAuthStateChanged 顯示登入畫面
         });
 
-        // 步驟 2：監聽登入狀態，處理「已有登入快取」和「登出」兩種情境
         auth.onAuthStateChanged((user) => {
             if (user) {
                 handleAuthenticatedUser(user);
             } else {
                 processedUid = null;
                 currentUserEmail = null; currentUserName = null; currentUserIsAdmin = false;
-                // 登出或未登入：等 getRedirectResult 確認完再顯示登入畫面，
-                // 避免「跳轉回來的瞬間 onAuthStateChanged 先傳 null」這個假陰性觸發登入畫面
-                if (redirectChecked) {
+
+                if (firstUserSeen) {
+                    // 曾經有過登入狀態，這個 null 代表真正登出
+                    firstUserSeen = false;
                     renderAuthGateLogin();
                 } else {
-                    // 還沒確認跳轉結果，先等 2 秒，夠 getRedirectResult 完成了
+                    // 還沒看過 user，可能是跳轉過渡期的假 null
+                    // 等 4 秒：足夠讓 Firebase 處理完跳轉結果再決定要不要顯示登入畫面
                     setTimeout(() => {
                         if (!processedUid) renderAuthGateLogin();
-                    }, 2000);
+                    }, 4000);
                 }
             }
         });
