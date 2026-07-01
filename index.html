@@ -723,23 +723,32 @@
             const errEl = document.getElementById('auth-gate-error');
             if (errEl) errEl.textContent = '';
             const provider = new firebase.auth.GoogleAuthProvider();
-            // 改用整頁跳轉登入（signInWithRedirect）取代彈出視窗（signInWithPopup）
-            // 手機瀏覽器（尤其 iOS Chrome/Safari）對彈出視窗登入的支援很不穩定，容易出現
-            // cancelled-popup-request 或 The requested action is invalid 等錯誤，改用跳轉方式可以避開這類問題。
-            auth.signInWithRedirect(provider).catch((error) => {
-                if (errEl) errEl.textContent = '登入失敗，請再試一次（' + error.message + '）';
-                console.error('Google 登入失敗:', error);
+
+            // 優先使用 popup（不依賴 third-party cookie / iframe，在現代 Chrome 上更穩定）
+            // Chrome 已逐漸封鎖 third-party cookie，signInWithRedirect 的跨來源狀態儲存因此失效，
+            // 導致 Google 登入完跳回來後 Firebase 完全拿不到 user（也不報錯）。
+            // signInWithPopup 的認證流程走的是 postMessage 而非 iframe 儲存，不受此影響。
+            auth.signInWithPopup(provider).catch((err) => {
+                console.error('Popup 登入失敗:', err.code);
+                const fallbackCodes = [
+                    'auth/popup-blocked',
+                    'auth/cancelled-popup-request',
+                    'auth/operation-not-supported-in-this-environment'
+                ];
+                if (fallbackCodes.includes(err.code)) {
+                    // popup 被封鎖才改用 redirect（手機瀏覽器部分情況）
+                    auth.signInWithRedirect(provider).catch((e) => {
+                        if (errEl) errEl.textContent = '登入失敗：' + e.message;
+                    });
+                } else if (err.code !== 'auth/popup-closed-by-user') {
+                    if (errEl) errEl.textContent = '登入失敗：' + err.message;
+                }
             });
         }
 
         // ── 登入驗證核心流程 ──────────────────────────────────────────
-        // Firebase signInWithRedirect 的已知行為：頁面重載後，onAuthStateChanged 會先傳 null，
-        // 等 Firebase 內部處理完跳轉結果後，才會再傳一次真正的 user。
-        // 為了避免那個假的 null 觸發登入畫面，策略是：
-        // - 第一次收到 null 時，等一段時間看看 user 會不會進來
-        // - 如果曾經看過 user，之後的 null 才代表真正的登出，立即顯示登入畫面
         let processedUid = null;
-        let firstUserSeen = false; // 記錄是否曾經成功取得過登入的 user
+        let firstUserSeen = false;
 
         function handleAuthenticatedUser(user) {
             if (!user) return;
@@ -778,12 +787,11 @@
             });
         }
 
-        // getRedirectResult 作為輔助：如果它先拿到 user，直接處理，不等 onAuthStateChanged
+        // 處理從 redirect 跳轉回來的結果（只有 popup 被封鎖時才會走到這條路）
         auth.getRedirectResult().then((result) => {
             if (result && result.user) handleAuthenticatedUser(result.user);
         }).catch((error) => {
-            console.error('登入跳轉處理失敗:', error);
-            // 把錯誤顯示在畫面上，不只藏在 console，方便直接看到問題
+            console.error('Redirect 跳轉失敗:', error);
             renderAuthGateLogin();
             const errEl = document.getElementById('auth-gate-error');
             if (errEl) errEl.textContent = '⚠️ ' + error.code + '：' + error.message;
