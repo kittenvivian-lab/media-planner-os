@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>團隊進度看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -471,7 +471,7 @@
         let currentCalendarOwnerFilter = 'all'; 
         let currentCalendarClientFilter = 'all'; 
         let editingAdminTaskId = null; 
-        let editingNoticeId = null; // 優化 3 新增：追蹤目前正在編輯中的公告 ID
+        let editingNoticeId = null; 
 
         // 智能行事曆時間變數
         let calendarCurrentDate = new Date(); 
@@ -1407,7 +1407,7 @@
                             if (!ref) {
                                 itemsHtml += `
                                     <div class="p-3 border-b border-slate-50 last:border-0 bg-slate-50/50">
-                                        <p class="text-xs text-slate-400 italic">⚠️ 原始工作事項已被刪除，這筆交接紀錄可以移成了。</p>
+                                        <p class="text-xs text-slate-400 italic">⚠️ 原始工作事項已被刪除，這筆交接紀錄可以移除了。</p>
                                         <button onclick="removeHandoffItem('${ho.id}','${hoItem.id}',event)" class="text-[10px] text-rose-400 hover:text-rose-600 font-bold mt-1">移除此筆</button>
                                     </div>`;
                                 return;
@@ -1445,7 +1445,7 @@
                                             <div class="mt-2 space-y-1.5">
                                                 <div>
                                                     <label class="text-[10px] font-bold text-slate-400 block mb-0.5">📝 狀況說明</label>
-                                                    <textarea rows="2" placeholder="處理進度進度說明..." onblur="saveHandoffItemNote('${hoItem.id}', this.value)" class="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none">${escapeHTML(hoItem.statusNote || '')}</textarea>
+                                                    <textarea rows="2" placeholder="處理進度說明..." onblur="saveHandoffItemNote('${hoItem.id}', this.value)" class="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none">${escapeHTML(hoItem.statusNote || '')}</textarea>
                                                 </div>
                                                 <div class="flex gap-1.5 items-end">
                                                     <div class="flex-grow">
@@ -1853,18 +1853,16 @@
             return dayEvents;
         }
 
-        // 優化 1：修改此函式，將客戶品牌色套用到微觀工作事項上
         function buildEventBadge(ev, compact) {
             const evBox = document.createElement('div');
             const bColor = getBrandColor(ev.brand);
             
             if (ev.type === 'launch') {
                 evBox.className = `event-badge text-[10px] px-1.5 py-1 rounded-full border-2 leading-tight select-none cursor-pointer font-black shadow-sm ${bColor.bg} ${bColor.text} ${bColor.border}`;
-                evBox.innerHTML = `🚀 ${escapeHTML(ev.brand)} 上線`;
+                // 使用修正後的專案名稱顯示方式
+                evBox.innerHTML = escapeHTML(ev.text);
             } else {
                 const isOver = checkIsOverdue(ev.dateStr, ev.completed);
-                
-                // 動態組裝樣式：未完成的工作套用客戶品牌色，已完成與逾期維持原有邏輯警告色
                 let colorClasses = `${bColor.bg} ${bColor.text} ${bColor.border}`;
                 if (ev.completed) {
                     colorClasses = 'bg-slate-100 text-slate-400 border-slate-200 line-through';
@@ -1881,6 +1879,73 @@
             }
             evBox.onclick = (e) => { e.stopPropagation(); openCalendarDetailModal(ev); };
             return evBox;
+        }
+
+        // --- 完整補回：日/週/月 切換運算邏輯 ---
+        function getWeekStart(d) {
+            const nd = new Date(d); nd.setHours(0,0,0,0); nd.setDate(nd.getDate() - nd.getDay()); return nd;
+        }
+
+        function getISOWeekNumber(d) {
+            const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+            const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+            return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+        }
+
+        function renderCalendarDayView(container, titleEl, events) {
+            container.className = "block";
+            const dateObj = calendarCurrentDate;
+            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            titleEl.textContent = `${dateObj.getFullYear()} 年 ${dateObj.getMonth()+1} 月 ${dateObj.getDate()} 日（${weekdays[dateObj.getDay()]}）`;
+
+            container.innerHTML = '';
+            const dayEvents = getEventsForDate(events, dateObj);
+            if (dayEvents.length === 0) {
+                container.innerHTML = `<div class="text-center py-16 text-slate-300 bg-slate-50 rounded-xl border border-dashed">這一天沒有任何事項或上線日。</div>`;
+                return;
+            }
+            const list = document.createElement('div');
+            list.className = "space-y-2 max-h-[500px] overflow-y-auto pr-1";
+            dayEvents.forEach(ev => {
+                const badge = buildEventBadge(ev, false);
+                badge.className += " !text-sm !p-3";
+                list.appendChild(badge);
+            });
+            container.appendChild(list);
+        }
+
+        function renderCalendarWeekView(container, titleEl, events) {
+            container.className = "grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200";
+            const weekStart = getWeekStart(calendarCurrentDate);
+            const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+            const fmt = (d) => `${d.getMonth()+1}/${d.getDate()}`;
+            titleEl.textContent = `${weekStart.getFullYear()} 年 第 ${getISOWeekNumber(weekStart)} 週（${fmt(weekStart)} ～ ${fmt(weekEnd)}）`;
+
+            container.innerHTML = '';
+            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            const today = new Date();
+
+            for (let i = 0; i < 7; i++) {
+                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
+                const isToday = dateObj.toDateString() === today.toDateString();
+                const headerCell = document.createElement('div');
+                headerCell.className = `p-2 text-center text-xs font-bold ${isToday ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`;
+                headerCell.innerHTML = `${weekdays[i]}<div class="text-[10px] font-normal">${dateObj.getMonth()+1}/${dateObj.getDate()}</div>`;
+                container.appendChild(headerCell);
+            }
+
+            for (let i = 0; i < 7; i++) {
+                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
+                const dayCell = document.createElement('div'); dayCell.className = "bg-white min-h-[320px] p-1.5 border-t border-slate-100 flex flex-col gap-1 overflow-y-auto";
+                const dayEvents = getEventsForDate(events, dateObj);
+                if (dayEvents.length === 0) {
+                    dayCell.innerHTML = `<span class="text-[10px] text-slate-300 italic text-center mt-4">無事項</span>`;
+                } else {
+                    dayEvents.forEach(ev => dayCell.appendChild(buildEventBadge(ev, false)));
+                }
+                container.appendChild(dayCell);
+            }
         }
 
         function setCalendarViewMode(mode) {
@@ -1969,39 +2034,7 @@
                 dayCell.appendChild(listContainer); container.appendChild(dayCell);
             }
         }
-
-        function renderCalendarWeekView(container, titleEl, events) {
-            container.className = "grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200";
-            const weekStart = getWeekStart(calendarCurrentDate);
-            const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
-            const fmt = (d) => `${d.getMonth()+1}/${d.getDate()}`;
-            titleEl.textContent = `${weekStart.getFullYear()} 年 第 ${getISOWeekNumber(weekStart)} 週（${fmt(weekStart)} ～ ${fmt(weekEnd)}）`;
-
-            container.innerHTML = '';
-            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-            const today = new Date();
-
-            for (let i = 0; i < 7; i++) {
-                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
-                const isToday = dateObj.toDateString() === today.toDateString();
-                const headerCell = document.createElement('div');
-                headerCell.className = `p-2 text-center text-xs font-bold ${isToday ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`;
-                headerCell.innerHTML = `${weekdays[i]}<div class="text-[10px] font-normal">${dateObj.getMonth()+1}/${dateObj.getDate()}</div>`;
-                container.appendChild(headerCell);
-            }
-
-            for (let i = 0; i < 7; i++) {
-                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
-                const dayCell = document.createElement('div'); dayCell.className = "bg-white min-h-[320px] p-1.5 border-t border-slate-100 flex flex-col gap-1 overflow-y-auto";
-                const dayEvents = getEventsForDate(events, dateObj);
-                if (dayEvents.length === 0) {
-                    dayCell.innerHTML = `<span class="text-[10px] text-slate-300 italic text-center mt-4">無事項</span>`;
-                } else {
-                    dayEvents.forEach(ev => dayCell.appendChild(buildEventBadge(ev, false)));
-                }
-                container.appendChild(dayCell);
-            }
-        }
+        // --- 補回結束 ---
 
         function getCalendarEventRefKey(ev) {
             if (ev.type === 'camp') return `camp|${ev.campaignId}|${ev.stageId}|${ev.itemId}`;
@@ -2009,7 +2042,6 @@
             return '';
         }
 
-        // 優化 2：快速完成劃掉按鈕處理函式
         function triggerFastCompleteEvent(refKey) {
             const parts = refKey.split('|');
             if (parts[0] === 'camp') {
@@ -2031,7 +2063,6 @@
             renderUI();
         }
 
-        // 優化 2：優化事項交期明細彈窗，顯示具體專案、去除狀態並增設快速劃掉功能
         function openCalendarDetailModal(ev) {
             const body = document.getElementById('calendar-detail-modal-body');
             if (ev.type === 'launch') {
@@ -2076,7 +2107,6 @@
         }
 
         function closeCalendarDetailModal() { document.getElementById('calendar-detail-modal').classList.add('hidden'); }
-        function moveCalendarMonth(dir) { calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + dir); renderIntelligenceCalendar(); }
 
         function renderUI() {
             let overdueCount = 0;
@@ -2096,7 +2126,6 @@
             renderKanban();
         }
 
-        // 優化 3：修改張貼公告函式，支援 Bug 修復與「編輯保存」雙情境
         function openNoticeModal(mode, noticeId) {
             const titleInput = document.getElementById('notice-title-input');
             const contentInput = document.getElementById('notice-content-input');
@@ -2107,7 +2136,6 @@
 
             if (mode === 'add') {
                 editingNoticeId = null;
-                // 🔥 修復 Bug：每次按新增均強制清空，不殘留上一筆資料
                 titleInput.value = '';
                 contentInput.value = '';
                 authorInput.value = currentUserName || '';
@@ -2137,7 +2165,6 @@
             if(!t || !c) return;
 
             if (editingNoticeId) {
-                // 編輯保存模式：更新現有公告
                 const notice = state.notices.find(n => n.id === editingNoticeId);
                 if (notice) {
                     notice.title = t;
@@ -2147,14 +2174,12 @@
                 }
                 editingNoticeId = null;
             } else {
-                // 新增模式
                 state.notices.unshift({ id: 'n_' + Date.now(), title: t, content: c, author: a, date: d });
             }
             closeNoticeModal(); 
             saveStateToStorage();
         }
 
-        // 優化 3：為公告欄卡片右上方加上編輯按鈕
         function renderNotices() {
             const grid = document.getElementById('notices-grid'); if(!grid) return;
             grid.innerHTML = '';
