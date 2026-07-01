@@ -732,66 +732,84 @@
             });
         }
 
-        // 追蹤兩個非同步流程的狀態，任何一邊完成都要通知另一邊，避免互相等待導致畫面卡住
-        let redirectResultChecked = false;
-        let authStateUser = undefined; // undefined=尚未收到；null=確認未登入；object=已登入
+        // ── 登入驗證核心流程 ──────────────────────────────────────────
+        // 設計原則：
+        // 1. getRedirectResult → 專門處理「從 Google 登入頁跳轉回來」這個情境
+        // 2. onAuthStateChanged → 處理「已登入狀態」和「登出」
+        // 3. 用 processedUid 避免同一個使用者被重複處理（兩個流程可能都帶著同一個 user 進來）
+        let processedUid = null;
+        let redirectChecked = false;
 
-        function checkAndRenderAuth() {
-            // 只有兩邊都確認完才能做決定
-            if (!redirectResultChecked || authStateUser === undefined) return;
+        function handleAuthenticatedUser(user) {
+            if (!user) return;
+            if (processedUid === user.uid) return; // 已經處理過這個使用者了，跳過
+            processedUid = user.uid;
 
-            if (!authStateUser) {
-                // 兩邊都確認完，而且確實沒有登入的使用者，顯示登入畫面
-                currentUserEmail = null; currentUserName = null; currentUserIsAdmin = false;
-                renderAuthGateLogin();
-                return;
-            }
-            // 有登入的使用者，進行許可名單檢查
             renderAuthGateLoading();
-            const email = (authStateUser.email || '').toLowerCase();
+            const email = (user.email || '').toLowerCase();
+
             db.collection('allowedUsers').doc(email).get().then((doc) => {
                 const isSuperAdmin = email === SUPER_ADMIN_EMAIL;
                 if (!doc.exists && !isSuperAdmin) {
+                    processedUid = null; // 不在名單裡，重設讓下次可以重新判斷
                     renderAuthGateDenied(email);
                     return;
                 }
                 currentUserEmail = email;
-                currentUserName = doc.exists ? doc.data().name : (authStateUser.displayName || 'Admin');
+                currentUserName = doc.exists ? doc.data().name : (user.displayName || 'Admin');
                 currentUserIsAdmin = doc.exists ? !!doc.data().isAdmin : true;
 
                 document.getElementById('current-user-name-label').textContent = currentUserName;
                 document.getElementById('nav-usermanagement').classList.toggle('hidden', !currentUserIsAdmin);
-
                 document.getElementById('auth-gate').classList.add('hidden');
                 document.getElementById('app-root').classList.remove('hidden');
 
                 startAllowedUsersListener();
                 loadStateFromStorage();
             }).catch((error) => {
+                processedUid = null;
                 console.error('檢查許可名單失敗:', error);
                 renderAuthGateDenied(email);
             });
         }
 
+        // 步驟 1：先處理從 Google 登入頁跳轉回來的情境
         auth.getRedirectResult().then((result) => {
-            redirectResultChecked = true;
-            checkAndRenderAuth();
+            redirectChecked = true;
+            if (result && result.user) {
+                handleAuthenticatedUser(result.user);
+            }
+            // 沒有 redirect result 不需要做任何事，onAuthStateChanged 會接手
         }).catch((error) => {
-            redirectResultChecked = true;
+            redirectChecked = true;
             console.error('登入跳轉處理失敗:', error);
-            checkAndRenderAuth();
-            const errEl = document.getElementById('auth-gate-error');
-            if (errEl) errEl.textContent = '登入失敗，請再試一次（' + error.message + '）';
+            // 錯誤的話讓 onAuthStateChanged 顯示登入畫面
+        });
+
+        // 步驟 2：監聽登入狀態，處理「已有登入快取」和「登出」兩種情境
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                handleAuthenticatedUser(user);
+            } else {
+                processedUid = null;
+                currentUserEmail = null; currentUserName = null; currentUserIsAdmin = false;
+                // 登出或未登入：等 getRedirectResult 確認完再顯示登入畫面，
+                // 避免「跳轉回來的瞬間 onAuthStateChanged 先傳 null」這個假陰性觸發登入畫面
+                if (redirectChecked) {
+                    renderAuthGateLogin();
+                } else {
+                    // 還沒確認跳轉結果，先等 2 秒，夠 getRedirectResult 完成了
+                    setTimeout(() => {
+                        if (!processedUid) renderAuthGateLogin();
+                    }, 2000);
+                }
+            }
         });
 
         function handleLogout() {
+            processedUid = null;
             auth.signOut();
         }
-
-        auth.onAuthStateChanged((user) => {
-            authStateUser = user || null;
-            checkAndRenderAuth();
-        });
 
         // 持續監聽許可名單集合（用來即時更新成員管理頁面，以及讓下拉選單能列出所有許可成員的姓名）
         function startAllowedUsersListener() {
