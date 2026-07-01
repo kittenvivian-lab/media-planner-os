@@ -732,37 +732,23 @@
             });
         }
 
-        // 用一個旗標追蹤「是否已確認過跳轉結果」，避免 onAuthStateChanged 在 getRedirectResult 完成前
-        // 就收到 null 然後把畫面切回登入頁（這是跳轉登入後頁面重載時的典型時序問題）
+        // 追蹤兩個非同步流程的狀態，任何一邊完成都要通知另一邊，避免互相等待導致畫面卡住
         let redirectResultChecked = false;
+        let authStateUser = undefined; // undefined=尚未收到；null=確認未登入；object=已登入
 
-        auth.getRedirectResult().then((result) => {
-            redirectResultChecked = true;
-            // result.user 有值代表剛從 Google 登入頁跳轉回來，onAuthStateChanged 會接手後續流程
-        }).catch((error) => {
-            redirectResultChecked = true;
-            console.error('登入跳轉處理失敗:', error);
-            renderAuthGateLogin();
-            const errEl = document.getElementById('auth-gate-error');
-            if (errEl) errEl.textContent = '登入失敗，請再試一次（' + error.message + '）';
-        });
+        function checkAndRenderAuth() {
+            // 只有兩邊都確認完才能做決定
+            if (!redirectResultChecked || authStateUser === undefined) return;
 
-        function handleLogout() {
-            auth.signOut();
-        }
-
-        // 監聽登入狀態變化：未登入 -> 顯示登入畫面；已登入 -> 檢查許可名單
-        auth.onAuthStateChanged((user) => {
-            if (!user) {
-                // 跳轉結果還沒確認完之前先不顯示登入畫面，等 getRedirectResult 完成後再判斷
-                if (!redirectResultChecked) return;
+            if (!authStateUser) {
+                // 兩邊都確認完，而且確實沒有登入的使用者，顯示登入畫面
                 currentUserEmail = null; currentUserName = null; currentUserIsAdmin = false;
                 renderAuthGateLogin();
                 return;
             }
+            // 有登入的使用者，進行許可名單檢查
             renderAuthGateLoading();
-            const email = (user.email || '').toLowerCase();
-
+            const email = (authStateUser.email || '').toLowerCase();
             db.collection('allowedUsers').doc(email).get().then((doc) => {
                 const isSuperAdmin = email === SUPER_ADMIN_EMAIL;
                 if (!doc.exists && !isSuperAdmin) {
@@ -770,8 +756,8 @@
                     return;
                 }
                 currentUserEmail = email;
-                currentUserName = doc.exists ? doc.data().name : (user.displayName || 'Admin');
-                currentUserIsAdmin = doc.exists ? !!doc.data().isAdmin : true; // 超級管理員信箱即使名單裡沒資料，也視為管理員
+                currentUserName = doc.exists ? doc.data().name : (authStateUser.displayName || 'Admin');
+                currentUserIsAdmin = doc.exists ? !!doc.data().isAdmin : true;
 
                 document.getElementById('current-user-name-label').textContent = currentUserName;
                 document.getElementById('nav-usermanagement').classList.toggle('hidden', !currentUserIsAdmin);
@@ -785,6 +771,26 @@
                 console.error('檢查許可名單失敗:', error);
                 renderAuthGateDenied(email);
             });
+        }
+
+        auth.getRedirectResult().then((result) => {
+            redirectResultChecked = true;
+            checkAndRenderAuth();
+        }).catch((error) => {
+            redirectResultChecked = true;
+            console.error('登入跳轉處理失敗:', error);
+            checkAndRenderAuth();
+            const errEl = document.getElementById('auth-gate-error');
+            if (errEl) errEl.textContent = '登入失敗，請再試一次（' + error.message + '）';
+        });
+
+        function handleLogout() {
+            auth.signOut();
+        }
+
+        auth.onAuthStateChanged((user) => {
+            authStateUser = user || null;
+            checkAndRenderAuth();
         });
 
         // 持續監聽許可名單集合（用來即時更新成員管理頁面，以及讓下拉選單能列出所有許可成員的姓名）
