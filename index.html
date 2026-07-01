@@ -127,13 +127,13 @@
                     <p class="text-sm text-slate-500 mt-0.5">匯集所有專案工作與行政任務的預計完成日。點擊姓名按鈕可快速過濾交期事項。</p>
                 </div>
                 <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs">
-                    <div class="flex flex-wrap gap-1 items-center">
-                        <span class="font-bold text-slate-500 px-1 w-10">👤 成員:</span>
-                        <div class="flex flex-wrap gap-1" id="calendar-owner-pills"></div>
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="font-bold text-slate-500 shrink-0 text-[11px]">👤 成員</span>
+                        <div class="flex gap-1 overflow-x-auto flex-nowrap" id="calendar-owner-pills" style="scrollbar-width:none;-webkit-overflow-scrolling:touch"></div>
                     </div>
-                    <div class="flex flex-wrap gap-1 items-center border-t border-slate-200 pt-2">
-                        <span class="font-bold text-slate-500 px-1 w-10">🏢 客戶:</span>
-                        <div class="flex flex-wrap gap-1" id="calendar-client-pills"></div>
+                    <div class="flex items-center gap-1.5 border-t border-slate-200 pt-2 min-w-0">
+                        <span class="font-bold text-slate-500 shrink-0 text-[11px]">🏢 客戶</span>
+                        <div class="flex gap-1 overflow-x-auto flex-nowrap" id="calendar-client-pills" style="scrollbar-width:none;-webkit-overflow-scrolling:touch"></div>
                     </div>
                 </div>
             </div>
@@ -244,8 +244,14 @@
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <select id="admin-task-owner-select" onchange="handleOwnerSelectChange(this,'admin-task-owner-custom')" class="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"></select>
-                                <input type="text" id="admin-task-owner-custom" placeholder="輸入新成員姓名" class="hidden w-full text-sm border border-slate-200 rounded-lg px-2.5 py-2 mt-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                                <div class="flex items-center gap-2 py-2">
+                                    <span class="text-xs text-slate-500">👤 <span id="admin-owner-display" class="font-bold text-slate-700"></span></span>
+                                    <button onclick="document.getElementById('admin-owner-picker').classList.toggle('hidden')" class="text-[11px] text-emerald-600 hover:text-emerald-700 underline">指派給其他人</button>
+                                </div>
+                                <div id="admin-owner-picker" class="hidden space-y-1">
+                                    <select id="admin-task-owner-select" onchange="handleOwnerSelectChange(this,'admin-task-owner-custom'); const v=this.value; if(v&&v!=='__custom__') document.getElementById('admin-owner-display').textContent=v;" class="w-full text-sm border border-emerald-300 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"></select>
+                                    <input type="text" id="admin-task-owner-custom" placeholder="輸入新成員姓名" oninput="document.getElementById('admin-owner-display').textContent=this.value||'';" class="hidden w-full text-sm border border-emerald-300 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                                </div>
                             </div>
                             <input type="date" id="admin-task-date" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-500">
                         </div>
@@ -568,6 +574,42 @@
         }
 
         function getAllAdminOwners() { return getAllOwners(); }
+
+        // V16：負責人選擇器 toggle（預設隱藏下拉選單，只顯示登入者名字，點「指派給其他人」才展開）
+        function toggleOwnerPicker(stgId) {
+            const picker = document.getElementById('owner-picker-' + stgId);
+            if (!picker) return;
+            const isHidden = picker.classList.contains('hidden');
+            picker.classList.toggle('hidden');
+            if (isHidden) {
+                // 展開時，同步下拉選單選項為目前顯示的名字
+                const display = document.getElementById('owner-display-' + stgId);
+                const sel = document.getElementById('owner-' + stgId);
+                if (display && sel) {
+                    // 找到對應選項並選中
+                    const name = display.textContent;
+                    Array.from(sel.options).forEach(o => { if (o.value === name) o.selected = true; });
+                }
+            }
+        }
+        function updateOwnerDisplay(stgId) {
+            const sel = document.getElementById('owner-' + stgId);
+            const display = document.getElementById('owner-display-' + stgId);
+            if (!sel || !display) return;
+            if (sel.value && sel.value !== '__custom__') display.textContent = sel.value;
+        }
+
+        function toggleOwnerPicker(stgId) {
+            const picker = document.getElementById(`owner-picker-${stgId}`);
+            if (!picker) return;
+            picker.classList.toggle('hidden');
+        }
+        function updateOwnerDisplay(stgId) {
+            const sel = document.getElementById(`owner-${stgId}`);
+            const display = document.getElementById(`owner-display-${stgId}`);
+            if (!sel || !display) return;
+            if (sel.value && sel.value !== '__custom__') display.textContent = sel.value;
+        }
 
         // ============================================================
         // 新增：負責人下拉選單共用輔助函式
@@ -1557,7 +1599,7 @@
             renderKanban();
         }
 
-        // 新增：原本程式碼缺漏的行政事項新增函式（「加入行政看板」按鈕原本完全沒反應）
+        // 新增：原本程式碼缺漏的行政事項新增函式（「加入看板」按鈕原本完全沒反應）
         function addAdminTask() {
             const input = document.getElementById('admin-task-input');
             const categorySelect = document.getElementById('admin-task-category');
@@ -1722,9 +1764,14 @@
                             <input type="date" id="date-${stg.id}" class="text-xs border border-slate-200 rounded-lg px-1 py-1.5 text-slate-500 w-[105px] shrink-0">
                             <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg shrink-0">追加</button>
                         </div>
-                        <div class="flex gap-1.5 items-start">
-                            <select id="owner-${stg.id}" onchange="handleOwnerSelectChange(this,'ownercustom-${stg.id}')" class="flex-grow text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">${buildOwnerSelectOptions(stg.owner && stg.owner !== '未指定' ? stg.owner : (currentUserName || ''), true)}</select>
-                            <input type="text" id="ownercustom-${stg.id}" placeholder="輸入新成員姓名" class="hidden flex-grow text-xs border border-slate-200 rounded-lg px-1.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-400">👤 負責人：<span id="owner-display-${stg.id}" class="font-bold text-slate-600">${escapeHTML(currentUserName || '未指定')}</span></span>
+                            <button onclick="toggleOwnerPicker('${stg.id}')" class="text-[10px] text-indigo-400 hover:text-indigo-600 underline">指派給其他人</button>
+                        </div>
+                        <div id="owner-picker-${stg.id}" class="hidden flex gap-1.5 items-start">
+                            <select id="owner-${stg.id}" onchange="handleOwnerSelectChange(this,'ownercustom-${stg.id}'); updateOwnerDisplay('${stg.id}')" class="flex-grow text-xs border border-indigo-300 rounded-lg px-1.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">${buildOwnerSelectOptions(currentUserName || '', false)}</select>
+                            <input type="text" id="ownercustom-${stg.id}" placeholder="輸入新成員姓名" oninput="document.getElementById('owner-display-${stg.id}').textContent=this.value||'';" class="hidden flex-grow text-xs border border-indigo-300 rounded-lg px-1.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <button onclick="toggleOwnerPicker('${stg.id}')" class="text-xs text-slate-400 hover:text-slate-600 px-1 shrink-0">✕</button>
                         </div>
                     </div>
                 `;
@@ -1741,8 +1788,13 @@
             const createOwnerSelect = document.getElementById('admin-task-owner-select');
             if (createOwnerSelect) {
                 const prevVal = createOwnerSelect.value;
-                createOwnerSelect.innerHTML = buildOwnerSelectOptions(currentUserName || '', true);
+                createOwnerSelect.innerHTML = buildOwnerSelectOptions(currentUserName || '', false);
                 if (prevVal && Array.from(createOwnerSelect.options).some(o => o.value === prevVal)) createOwnerSelect.value = prevVal;
+            }
+            // 行政表單的負責人顯示文字：初始化為登入者姓名
+            const adminOwnerDisplay = document.getElementById('admin-owner-display');
+            if (adminOwnerDisplay && !adminOwnerDisplay.textContent) {
+                adminOwnerDisplay.textContent = currentUserName || '未指定';
             }
             
             const ownerFilterContainer = document.getElementById('admin-owner-filter-pills');
@@ -1790,7 +1842,7 @@
                         <input type="text" id="edit-text-${task.id}" value="${escapeHTML(task.text)}" class="w-full text-sm border border-indigo-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white font-semibold">
                         <div class="grid grid-cols-2 gap-2">
                             <select id="edit-category-${task.id}" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-700">${categoryOptions}</select>
-                            <input type="text" id="edit-client-${task.id}" value="${escapeHTML(task.client||'')}" placeholder="🏢 客戶/品牌別" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-700">
+                            <input type="text" id="edit-client-${task.id}" value="${escapeHTML(task.client||'')}" placeholder="🏢 客戶" class="text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white text-slate-700">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
@@ -2097,6 +2149,8 @@
             if (state.adminTasks) state.adminTasks.forEach(t => { if (checkIsOverdue(t.dueDate, t.status==='done')) overdueCount++; });
             
             const overdueEl = document.getElementById('global-overdue-tasks'); if (overdueEl) overdueEl.textContent = overdueCount;
+            // 修正：執行中專案數量計數器（原本從未被更新）
+            const campaignCountEl = document.getElementById('global-campaign-count'); if (campaignCountEl) campaignCountEl.textContent = (state.campaigns || []).length;
 
             const active = getActiveCampaign();
             if (currentGlobalView === 'dashboard') renderCampaignDashboard();
