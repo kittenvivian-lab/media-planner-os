@@ -108,8 +108,8 @@
         [data-theme="dark"] .text-slate-900 { color: #f8fafc !important; }
         [data-theme="dark"] .text-slate-800 { color: #f1f5f9 !important; }
         [data-theme="dark"] .text-slate-700 { color: #e2e8f0 !important; }
-        [data-theme="dark"] .text-slate-600 { color: #cbd5e1 !important; }  /* 原本 #94a3b8 太灰，改淺 */
-        [data-theme="dark"] .text-slate-500 { color: #94a3b8 !important; }  /* 原本 #64748b，提亮 */
+        [data-theme="dark"] .text-slate-600 { color: #cbd5e1 !important; }
+        [data-theme="dark"] .text-slate-500 { color: #94a3b8 !important; }
         [data-theme="dark"] .text-slate-400 { color: #64748b !important; }
         [data-theme="dark"] .border-slate-200 { border-color: #334155 !important; }
         [data-theme="dark"] .border-slate-200\/80 { border-color: rgba(51,65,85,0.8) !important; }
@@ -318,6 +318,7 @@
             </div>
 
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 左側登錄動線調整（垂直一體化下拉選單 + 例行任務生成） -->
                 <div class="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-slate-100 pb-6 lg:pb-0 lg:pr-6 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center gap-2.5">
@@ -343,23 +344,42 @@
                                 <option value="請款">💰 請款</option>
                                 <option value="合約/簽核/用印">📝 合約/簽核/用印</option>
                                 <option value="臨時跨專案雜務">📌 臨時跨專案雜務</option>
+                                <option value="休假代辦">🌴 休假代辦</option>
                             </select>
                             <input type="text" id="admin-task-client-input" placeholder="🏢 客戶" class="text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                         </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <div class="flex items-center gap-2 py-2">
-                                    <span class="text-xs text-slate-500">👤 <span id="admin-owner-display" class="font-bold text-slate-700"></span></span>
-                                    <button onclick="document.getElementById('admin-owner-picker').classList.toggle('hidden')" class="text-[11px] text-emerald-600 hover:text-emerald-700 underline">指派給其他人</button>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500 block">👤 負責人</label>
+                            <select id="admin-task-owner-select" onchange="handleOwnerSelectChange(this,'admin-task-owner-custom');" class="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"></select>
+                            <input type="text" id="admin-task-owner-custom" placeholder="輸入新成員姓名" class="hidden w-full text-sm border border-emerald-300 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 block mb-1">📅 預計完成日 (首次發生日)</label>
+                            <input type="date" id="admin-task-date" class="w-full text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-500">
+                        </div>
+                        
+                        <!-- 全新加入的例行重複選項區塊 -->
+                        <div class="mt-2 pt-2 border-t border-slate-100">
+                            <label class="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer mb-2">
+                                <input type="checkbox" id="admin-task-is-recurring" class="w-4 h-4 rounded text-emerald-600" onchange="document.getElementById('recurring-options').classList.toggle('hidden', !this.checked)">
+                                🔁 設定為例行重複任務（批次產生）
+                            </label>
+                            <div id="recurring-options" class="hidden grid grid-cols-2 gap-2 bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100">
+                                <div>
+                                    <label class="text-[10px] font-bold text-emerald-700 block mb-1">重複頻率</label>
+                                    <select id="admin-task-recurring-freq" class="w-full text-xs border border-emerald-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                                        <option value="weekly">每週同一天</option>
+                                        <option value="monthly">每月同一天</option>
+                                    </select>
                                 </div>
-                                <div id="admin-owner-picker" class="hidden space-y-1">
-                                    <select id="admin-task-owner-select" onchange="handleOwnerSelectChange(this,'admin-task-owner-custom'); const v=this.value; if(v&&v!=='__custom__') document.getElementById('admin-owner-display').textContent=v;" class="w-full text-sm border border-emerald-300 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"></select>
-                                    <input type="text" id="admin-task-owner-custom" placeholder="輸入新成員姓名" oninput="document.getElementById('admin-owner-display').textContent=this.value||'';" class="hidden w-full text-sm border border-emerald-300 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                                <div>
+                                    <label class="text-[10px] font-bold text-emerald-700 block mb-1">📅 結束日期</label>
+                                    <input type="date" id="admin-task-recurring-end" class="w-full text-xs border border-emerald-200 rounded-lg px-2 py-1.5 bg-white text-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                                 </div>
                             </div>
-                            <input type="date" id="admin-task-date" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-500">
                         </div>
-                        <button onclick="addAdminTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 rounded-lg transition-all shadow-sm">
+
+                        <button onclick="addAdminTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 rounded-lg transition-all shadow-sm mt-1">
                             加入看板
                         </button>
                     </div>
@@ -398,7 +418,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <div>
                     <h2 class="text-lg font-bold text-slate-900">📋 公告欄 (Notice Board)</h2>
-                    <p class="text-sm text-slate-500 mt-0.5">用於張貼團隊內部公告事項。所有人均可自訂張貼。</p>
+                    <p class="text-sm text-slate-500 mt-0.5">用於張貼團隊內部公告事項。所有人均可自訂張貼與編輯。</p>
                 </div>
                 <button onclick="openNoticeModal('add')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 self-start sm:self-auto">
                     <span>➕ 新增公告</span>
@@ -578,13 +598,12 @@
         let currentAdminOwnerFilter = 'all'; 
         let currentAdminClientFilter = 'all'; 
         let currentCalendarOwnerFilter = 'all'; 
-        let currentCalendarClientFilter = 'all'; // 新增：行事曆客戶篩選變數
+        let currentCalendarClientFilter = 'all'; 
         let editingAdminTaskId = null;
-        let editingNoticeId = null; // 公告編輯追蹤
+        let editingNoticeId = null; 
 
-        // 智能行事曆時間變數
         let calendarCurrentDate = new Date(); 
-        let calendarViewMode = 'month'; // 新增：行事曆檢視模式（day/week/month）
+        let calendarViewMode = 'month'; 
 
         let currentModalMode = 'add';
         let activeStageIdInModal = '';
@@ -619,10 +638,9 @@
             return Array.from(brands);
         }
 
-        // 新增：依客戶品牌名稱產生固定顏色（同一個客戶永遠是同一個顏色，不會每次重整就換色）
         const BRAND_COLOR_PALETTE = [
             { bg: 'bg-amber-100',   text: 'text-amber-800',   border: 'border-amber-300',   dot: 'bg-amber-500' },
-            { bg: 'bg-sky-100',     text: 'text-sky-800',     border: 'border-sky-300',     dot: 'bg-sky-500' },
+            { bg: 'bg-sky-100',      text: 'text-sky-800',      border: 'border-sky-300',      dot: 'bg-sky-500' },
             { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800', border: 'border-fuchsia-300', dot: 'bg-fuchsia-500' },
             { bg: 'bg-lime-100',    text: 'text-lime-800',    border: 'border-lime-300',    dot: 'bg-lime-500' },
             { bg: 'bg-orange-100',  text: 'text-orange-800',  border: 'border-orange-300',  dot: 'bg-orange-500' },
@@ -643,7 +661,6 @@
             return Array.from(clients);
         }
 
-        // 不區分大小寫，所有人名歸一化去重
         function getAllOwners() {
             const ownersMap = new Map();
             if (state.campaigns) {
@@ -671,27 +688,25 @@
                     } 
                 });
             }
-            // 新增：把許可名單裡所有成員的姓名也加進來，這樣剛被加進系統、還沒被指派過任何工作的成員，下拉選單裡也能立刻選到他
-            Object.values(allowedUsersMap || {}).forEach(u => {
-                if (u && u.name && u.name.trim() !== '') ownersMap.set(u.name.trim().toLowerCase(), u.name.trim());
-            });
+            if (typeof allowedUsersMap !== 'undefined') {
+                Object.values(allowedUsersMap || {}).forEach(u => {
+                    if (u && u.name && u.name.trim() !== '') ownersMap.set(u.name.trim().toLowerCase(), u.name.trim());
+                });
+            }
             return Array.from(ownersMap.values());
         }
 
         function getAllAdminOwners() { return getAllOwners(); }
 
-        // V16：負責人選擇器 toggle（預設隱藏下拉選單，只顯示登入者名字，點「指派給其他人」才展開）
         function toggleOwnerPicker(stgId) {
             const picker = document.getElementById('owner-picker-' + stgId);
             if (!picker) return;
             const isHidden = picker.classList.contains('hidden');
             picker.classList.toggle('hidden');
             if (isHidden) {
-                // 展開時，同步下拉選單選項為目前顯示的名字
                 const display = document.getElementById('owner-display-' + stgId);
                 const sel = document.getElementById('owner-' + stgId);
                 if (display && sel) {
-                    // 找到對應選項並選中
                     const name = display.textContent;
                     Array.from(sel.options).forEach(o => { if (o.value === name) o.selected = true; });
                 }
@@ -704,23 +719,6 @@
             if (sel.value && sel.value !== '__custom__') display.textContent = sel.value;
         }
 
-        function toggleOwnerPicker(stgId) {
-            const picker = document.getElementById(`owner-picker-${stgId}`);
-            if (!picker) return;
-            picker.classList.toggle('hidden');
-        }
-        function updateOwnerDisplay(stgId) {
-            const sel = document.getElementById(`owner-${stgId}`);
-            const display = document.getElementById(`owner-display-${stgId}`);
-            if (!sel || !display) return;
-            if (sel.value && sel.value !== '__custom__') display.textContent = sel.value;
-        }
-
-        // ============================================================
-        // 新增：負責人下拉選單共用輔助函式
-        // 設計邏輯：下拉選單列出現有所有同仁，最後加一個「✏️ 其他（新成員）」選項，
-        // 選了之後旁邊會跳出一個小輸入框讓你打新成員的名字，兩種情境都涵蓋到。
-        // ============================================================
         function buildOwnerSelectOptions(selectedOwner, includeBlankPlaceholder) {
             const owners = getAllOwners();
             let html = '';
@@ -729,11 +727,10 @@
             owners.forEach(o => {
                 html += `<option value="${escapeHTML(o)}" ${selectedOwner && selectedOwner.toLowerCase()===o.toLowerCase() ? 'selected' : ''}>${escapeHTML(o)}</option>`;
             });
-            // 如果目前的負責人不在現有名單裡（例如舊資料、或剛手動輸入過的新成員），把它也放進選項裡保留住，不然下拉選單會自動跳掉
             if (selectedOwner && selectedOwner !== '未指定' && !ownerExists) {
                 html = `<option value="${escapeHTML(selectedOwner)}" selected>${escapeHTML(selectedOwner)}</option>` + html;
             }
-            html += `<option value="__custom__">✏️ 其他（手動輸入新成員）</option>`;
+            html += `<option value="__custom__">✏️ 手動輸入成員</option>`;
             return html;
         }
         function handleOwnerSelectChange(selectEl, customId) {
@@ -752,7 +749,6 @@
             return sel.value;
         }
 
-        // 新增：已完成事項本機隱藏開關（只存自己瀏覽器的 localStorage，不會同步給其他人，每個人可自行決定要不要看）
         function isHideCompletedAdminOn() {
             return localStorage.getItem('hideCompletedAdminTasks') === 'true';
         }
@@ -805,7 +801,6 @@
         }
         function closeCustomAlert() { document.getElementById('toast-modal').classList.add('hidden'); }
 
-        // 雲端連線設定
         const firebaseConfig = {
             apiKey: "AIzaSyBkKNE2y1bjlCj94fWEAVUWcWLJ6bkBgM8",
             authDomain: "media-planner-os.firebaseapp.com",
@@ -819,14 +814,11 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // ============================================================
-        // 新增：Google 登入驗證 + 許可名單系統
-        // ============================================================
-        const SUPER_ADMIN_EMAIL = 'kittenvivian@gmail.com'; // 永久管理員信箱，即使許可名單裡沒有自己的資料也一定能登入並管理名單，避免被自己鎖在外面
+        const SUPER_ADMIN_EMAIL = 'kittenvivian@gmail.com'; 
         let currentUserEmail = null;
         let currentUserName = null;
         let currentUserIsAdmin = false;
-        let allowedUsersMap = {}; // { email: { name, isAdmin } }
+        let allowedUsersMap = {}; 
         let allowedUsersListenerStarted = false;
 
         function renderAuthGateLoading() {
@@ -871,10 +863,6 @@
             if (errEl) errEl.textContent = '';
             const provider = new firebase.auth.GoogleAuthProvider();
 
-            // 優先使用 popup（不依賴 third-party cookie / iframe，在現代 Chrome 上更穩定）
-            // Chrome 已逐漸封鎖 third-party cookie，signInWithRedirect 的跨來源狀態儲存因此失效，
-            // 導致 Google 登入完跳回來後 Firebase 完全拿不到 user（也不報錯）。
-            // signInWithPopup 的認證流程走的是 postMessage 而非 iframe 儲存，不受此影響。
             auth.signInWithPopup(provider).catch((err) => {
                 console.error('Popup 登入失敗:', err.code);
                 const fallbackCodes = [
@@ -883,7 +871,6 @@
                     'auth/operation-not-supported-in-this-environment'
                 ];
                 if (fallbackCodes.includes(err.code)) {
-                    // popup 被封鎖才改用 redirect（手機瀏覽器部分情況）
                     auth.signInWithRedirect(provider).catch((e) => {
                         if (errEl) errEl.textContent = '登入失敗：' + e.message;
                     });
@@ -893,7 +880,6 @@
             });
         }
 
-        // ── 登入驗證核心流程 ──────────────────────────────────────────
         let processedUid = null;
         let firstUserSeen = false;
 
@@ -927,14 +913,12 @@
             }).catch((error) => {
                 processedUid = null;
                 console.error('檢查許可名單失敗:', error);
-                // 顯示詳細錯誤在登入畫面，方便除錯
                 renderAuthGateLogin();
                 const errEl = document.getElementById('auth-gate-error');
                 if (errEl) errEl.textContent = '讀取許可名單失敗，請確認 Firestore 規則設定（' + error.message + '）';
             });
         }
 
-        // 處理從 redirect 跳轉回來的結果（只有 popup 被封鎖時才會走到這條路）
         auth.getRedirectResult().then((result) => {
             if (result && result.user) handleAuthenticatedUser(result.user);
         }).catch((error) => {
@@ -952,12 +936,9 @@
                 currentUserEmail = null; currentUserName = null; currentUserIsAdmin = false;
 
                 if (firstUserSeen) {
-                    // 曾經有過登入狀態，這個 null 代表真正登出
                     firstUserSeen = false;
                     renderAuthGateLogin();
                 } else {
-                    // 還沒看過 user，可能是跳轉過渡期的假 null
-                    // 等 4 秒：足夠讓 Firebase 處理完跳轉結果再決定要不要顯示登入畫面
                     setTimeout(() => {
                         if (!processedUid) renderAuthGateLogin();
                     }, 4000);
@@ -970,7 +951,6 @@
             auth.signOut();
         }
 
-        // 持續監聽許可名單集合（用來即時更新成員管理頁面，以及讓下拉選單能列出所有許可成員的姓名）
         function startAllowedUsersListener() {
             if (allowedUsersListenerStarted) return;
             allowedUsersListenerStarted = true;
@@ -978,9 +958,9 @@
                 allowedUsersMap = {};
                 snapshot.forEach((doc) => { allowedUsersMap[doc.id] = doc.data(); });
                 if (currentGlobalView === 'usermanagement') renderUserManagement();
-                renderUI(); // 讓下拉選單即時反映成員名單變化
+                renderUI(); 
             }, (error) => {
-                console.error('讀取許可名單失敗（可能是 Firestore 規則限制非管理員讀取全部清單）:', error);
+                console.error('讀取許可名單失敗:', error);
             });
         }
 
@@ -1081,7 +1061,7 @@
         }
 
         function changeGlobalView(viewName) {
-            if (viewName === 'usermanagement' && !currentUserIsAdmin) return; // 防呆：非管理員不能進入成員管理分頁
+            if (viewName === 'usermanagement' && !currentUserIsAdmin) return; 
             currentGlobalView = viewName;
             document.querySelectorAll('.global-view').forEach(el => { el.classList.add('hidden'); el.classList.remove('block'); });
             const activeView = document.getElementById('view-' + (viewName === 'campaign-detail' ? 'campaign-detail' : viewName));
@@ -1089,7 +1069,7 @@
             
             document.querySelectorAll('.nav-tab').forEach(btn => {
                 btn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100";
-                if (btn.id === 'nav-usermanagement' && !currentUserIsAdmin) btn.classList.add('hidden'); // 重設 class 時要保留非管理員看不到此分頁的狀態
+                if (btn.id === 'nav-usermanagement' && !currentUserIsAdmin) btn.classList.add('hidden'); 
             });
             const activeNav = document.getElementById('nav-' + viewName);
             if (activeNav) activeNav.className = `nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewName === 'adminboard'?'text-emerald-700 bg-emerald-50':viewName==='calendarview'?'text-teal-700 bg-teal-50':viewName==='leavehandoff'?'text-amber-700 bg-amber-50':viewName==='usermanagement'?'text-slate-900 bg-slate-200':'text-indigo-700 bg-indigo-50'}`;
@@ -1151,7 +1131,6 @@
             });
         }
 
-        // 原地一鍵新增群組控制（免視窗彈出）
         function triggerInlineAddStage() {
             const container = document.getElementById('inline-stage-add-container');
             container.classList.remove('hidden');
@@ -1178,7 +1157,6 @@
             });
         }
 
-        // 工作群組項目名稱原地編輯修復
         function startInlineStageRename(stgId, el, e) {
             e.stopPropagation();
             if (el.querySelector('input')) return;
@@ -1282,17 +1260,6 @@
             });
         }
 
-        // ============================================================
-        // 新增：休假代辦交接系統
-        // 資料結構：state.leaveHandoffs = [{
-        //   id, fromOwner, toOwner, startDate, endDate, createdAt,
-        //   items: [{ id, refType:'campaign'|'admin', campaignId, stageId, itemId, taskId, statusNote, filePath }]
-        // }]
-        // 重點：完成狀態永遠直接讀取/寫入「原始工作事項」本身（不額外存一份），
-        // 所以休假代辦清單打勾＝專案總覽那邊也會直接變已完成，兩邊保證同步、不會兜不起來。
-        // ============================================================
-
-        // 將 "MM/DD" 格式的字串轉成 Date 物件（沿用全站既有的「無年份、預設今年」假設）
         function parseMMDDToDate(dateStr) {
             if (!dateStr || !dateStr.includes('/')) return null;
             const parts = dateStr.split('/');
@@ -1300,7 +1267,6 @@
             return isNaN(d.getTime()) ? null : d;
         }
 
-        // 找出某同仁在指定日期區間內、尚未完成的所有事項（跨專案 + 行政事項）
         function findOwnerItemsInRange(ownerName, startDateVal, endDateVal) {
             if (!ownerName || !startDateVal || !endDateVal) return [];
             const lower = ownerName.toLowerCase();
@@ -1330,7 +1296,6 @@
             return results;
         }
 
-        // 依參照取得「原始工作事項」的即時物件（確保兩邊資料永遠同一份，不會不同步）
         function resolveHandoffItemRef(hoItem) {
             if (hoItem.refType === 'campaign') {
                 const camp = state.campaigns.find(c => c.id === hoItem.campaignId);
@@ -1339,11 +1304,11 @@
                 if (!stage) return null;
                 const item = (stage.items || []).find(i => i.id === hoItem.itemId);
                 if (!item) return null;
-                return { live: item, brand: getBrandFromCampaignName(camp.name), campaignName: camp.name };
+                return { live: item, brand: getBrandFromCampaignName(camp.name), campaignName: camp.name, campaignId: camp.id, stageId: stage.id, itemId: item.id };
             } else {
                 const task = state.adminTasks.find(t => t.id === hoItem.taskId);
                 if (!task) return null;
-                return { live: task, brand: task.client || '通用行政', campaignName: null };
+                return { live: task, brand: task.client || '通用行政', campaignName: null, taskId: task.id };
             }
         }
 
@@ -1420,7 +1385,6 @@
 
             if (selectedItems.length === 0) { triggerCustomAlert("尚未選擇事項", "請至少勾選一筆需要交接的事項！", false); return; }
 
-            // 把選中項目的負責人改成代理同仁（這樣行事曆／看板上也會立刻看到是代理人在處理）
             const handoffItems = selectedItems.map(it => {
                 if (it.refType === 'campaign') {
                     const camp = state.campaigns.find(c => c.id === it.campaignId);
@@ -1452,7 +1416,6 @@
         }
 
         function toggleHandoffItemComplete(itemId) {
-            // 直接操作原始工作事項的完成狀態，因此這裡打勾＝專案總覽那邊也會同步顯示已完成
             for (const ho of (state.leaveHandoffs || [])) {
                 const hoItem = ho.items.find(i => i.id === itemId);
                 if (!hoItem) continue;
@@ -1477,7 +1440,6 @@
             }
         }
 
-        // 新增：快速切換工作事項目前的負責人（休假期間如果事情緊急沒辦法等同仁休完假，可以隨時轉回原本同仁，或轉回代理人）
         function setHandoffItemOwner(itemId, ownerName) {
             for (const ho of (state.leaveHandoffs || [])) {
                 const hoItem = ho.items.find(i => i.id === itemId);
@@ -1549,8 +1511,7 @@
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-2xl border border-amber-100 shadow-sm overflow-hidden";
 
-                // 新增：依專案分組（同一個專案的事項放一起，而非平鋪散開），行政事項另外獨立分一組
-                const groups = []; // [{key, label, brand, items:[hoItem,...]}]
+                const groups = []; 
                 const groupIndexMap = {};
                 (ho.items || []).forEach(hoItem => {
                     const ref = resolveHandoffItemRef(hoItem);
@@ -1594,7 +1555,6 @@
                             const dueDate = live.dueDate;
                             const currentOwner = live.owner || '未指定';
 
-                            // 新增：目前負責人快速切換（休假期間若需要把事項臨時轉回原同仁處理，這裡一鍵切換即可，不影響其他資料）
                             const isOnFrom = currentOwner.toLowerCase() === ho.fromOwner.toLowerCase();
                             const isOnTo = currentOwner.toLowerCase() === ho.toOwner.toLowerCase();
                             let ownerSwitcherHtml = `
@@ -1666,7 +1626,6 @@
             });
         }
 
-        // 新增：行政事項就地編輯功能
         function startEditAdminTask(taskId) {
             editingAdminTaskId = taskId;
             renderKanban();
@@ -1704,31 +1663,86 @@
             renderKanban();
         }
 
-        // 新增：原本程式碼缺漏的行政事項新增函式（「加入看板」按鈕原本完全沒反應）
+        // 最新擴充：支援「例行重複任務」批次產生的函式
         function addAdminTask() {
             const input = document.getElementById('admin-task-input');
             const categorySelect = document.getElementById('admin-task-category');
             const clientInput = document.getElementById('admin-task-client-input');
             const dateInput = document.getElementById('admin-task-date');
+            
+            // 抓取例行重複選項的值
+            const isRecurring = document.getElementById('admin-task-is-recurring').checked;
+            const freq = document.getElementById('admin-task-recurring-freq').value;
+            const endDateStr = document.getElementById('admin-task-recurring-end').value;
 
             const text = input.value.trim();
             const clientText = clientInput.value.trim() || '通用行政';
             const ownerText = getOwnerValueFromSelect('admin-task-owner-select', 'admin-task-owner-custom') || '未指定';
-            if (!text) return;
+            
+            if (!text) { triggerCustomAlert("未填寫完畢", "任務描述不可空白！", false); return; }
+            if (!dateInput.value) { triggerCustomAlert("未填寫完畢", "請選擇預計完成日（若是重複任務，此為第一次發生的日期）！", false); return; }
 
-            let dDisplay = "無截止日";
-            if (dateInput.value) { const p = dateInput.value.split('-'); dDisplay = `${p[1]}/${p[2]}`; }
+            if (isRecurring && !endDateStr) {
+                triggerCustomAlert("未填寫完畢", "請選擇例行任務的「結束日期」！", false); return;
+            }
 
-            state.adminTasks.push({
-                id: 'admin_' + Date.now(), text: text, category: categorySelect.value, client: clientText, owner: ownerText, dueDate: dDisplay, rawDate: dateInput.value, status: 'todo'
-            });
+            const startDate = new Date(dateInput.value);
+            const endDate = isRecurring ? new Date(endDateStr) : startDate;
+
+            if (isRecurring && endDate < startDate) {
+                triggerCustomAlert("日期錯誤", "結束日期不能早於開始日期！", false); return;
+            }
+
+            let currentDate = new Date(startDate);
+            let addedCount = 0;
+
+            // 批次產生迴圈
+            while (currentDate <= endDate) {
+                const y = currentDate.getFullYear();
+                const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const d = String(currentDate.getDate()).padStart(2, '0');
+                const rawDate = `${y}-${m}-${d}`;
+                const dDisplay = `${m}/${d}`;
+
+                state.adminTasks.push({
+                    id: 'admin_' + Date.now() + '_' + addedCount, 
+                    text: text, 
+                    category: categorySelect.value, 
+                    client: clientText, 
+                    owner: ownerText, 
+                    dueDate: dDisplay, 
+                    rawDate: rawDate, 
+                    status: 'todo'
+                });
+
+                addedCount++;
+
+                if (!isRecurring) break; // 單次任務立刻跳出
+                
+                // 計算下一期日期
+                if (freq === 'weekly') {
+                    currentDate.setDate(currentDate.getDate() + 7);
+                } else if (freq === 'monthly') {
+                    currentDate.setMonth(currentDate.getMonth() + 1);
+                }
+            }
+
+            // 清空表單狀態
             input.value = ''; clientInput.value = ''; dateInput.value = '';
-            document.getElementById('admin-task-owner-custom').value = '';
-            document.getElementById('admin-task-owner-custom').classList.add('hidden');
+            document.getElementById('admin-task-is-recurring').checked = false;
+            document.getElementById('recurring-options').classList.add('hidden');
+            document.getElementById('admin-task-recurring-end').value = '';
+            
+            const customField = document.getElementById('admin-task-owner-custom');
+            if(customField) { customField.value = ''; customField.classList.add('hidden'); }
+            
             saveStateToStorage();
+            
+            if (isRecurring) {
+                triggerCustomAlert("批次建立成功", `已為您成功建立 ${addedCount} 筆未來的例行任務！`, false);
+            }
         }
 
-        // 修正 1：主頁專案同仁篩選比對邏輯，支援大小寫模糊交叉查詢
         function 自动過濾修正(camp) {
             if (currentOwnerFilter === 'all') return true;
             return (camp.stages || []).some(s => 
@@ -1807,7 +1821,6 @@
                 grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white border border-dashed rounded-2xl text-slate-400">目前群組空空如也，請點選上方「新增工作群組」開始規劃！</div>`; return;
             }
 
-            // 完工群組自動摺疊排序置底
             const sortedStages = [...stagesList].sort((a, b) => {
                 const aDone = a.items && a.items.length > 0 && a.items.every(i => i.completed);
                 const bDone = b.items && b.items.length > 0 && b.items.every(i => i.completed);
@@ -1822,7 +1835,6 @@
                 let itHtml = '';
                 if (!stg.items || stg.items.length === 0) { itHtml = `<p class="text-xs text-slate-400 italic">暫無要做的事，請於下方新增。</p>`; } 
                 else {
-                    // 新增：依預計完成日排序（沒有日期的排到最後），避免追加時間排序導致較早到期的事項被埋在後面漏看
                     const sortedItems = [...stg.items].sort((a, b) => {
                         const da = parseMMDDToDate(a.dueDate);
                         const db = parseMMDDToDate(b.dueDate);
@@ -1854,7 +1866,7 @@
                         <div class="flex justify-between items-center pb-2 border-b border-slate-100 mb-3">
                             <h4 onclick="startInlineStageRename('${stg.id}', this, event)" class="font-extrabold text-slate-800 text-sm cursor-pointer hover:text-indigo-600 flex items-center gap-1.5" title="點擊可以直接編輯群組名稱">
                                 📁 <span>${escapeHTML(stg.name)}</span>
-                                ${isAllItemsCompleted ? `<span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full select-none">✅ 已完工 (已摺疊置底)</span>` : ''}
+                                ${isAllItemsCompleted ? `<span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full select-none">✅ 已完工</span>` : ''}
                             </h4>
                             <div class="flex gap-1.5 items-center">
                                 <button onclick="const el=document.getElementById('body-${stg.id}'); el.classList.toggle('hidden');" class="text-xs text-slate-400 font-bold px-1">↕</button>
@@ -1889,17 +1901,11 @@
             const adminOwners = getAllAdminOwners();
             const adminClients = getAllAdminClients();
 
-            // 新增：填充「新增行政雜務」表單的負責人下拉選單，並保留使用者目前已選的值，避免每次重繪就被重置
             const createOwnerSelect = document.getElementById('admin-task-owner-select');
             if (createOwnerSelect) {
                 const prevVal = createOwnerSelect.value;
                 createOwnerSelect.innerHTML = buildOwnerSelectOptions(currentUserName || '', false);
                 if (prevVal && Array.from(createOwnerSelect.options).some(o => o.value === prevVal)) createOwnerSelect.value = prevVal;
-            }
-            // 行政表單的負責人顯示文字：初始化為登入者姓名（不管 HTML 結構是哪個版本都安全）
-            const adminOwnerDisplay = document.getElementById('admin-owner-display');
-            if (adminOwnerDisplay) {
-                if (!adminOwnerDisplay.textContent.trim()) adminOwnerDisplay.textContent = currentUserName || '未指定';
             }
             
             const ownerFilterContainer = document.getElementById('admin-owner-filter-pills');
@@ -1928,7 +1934,6 @@
             }
 
             state.adminTasks.forEach(task => {
-                // 修正：補上 owner 安全檢查，避免缺漏負責人欄位的舊資料造成整個函式中斷
                 if (currentAdminOwnerFilter !== 'all' && (task.owner || '').toLowerCase() !== currentAdminOwnerFilter.toLowerCase()) return;
                 if (currentAdminClientFilter !== 'all' && task.client !== currentAdminClientFilter) return;
 
@@ -1938,7 +1943,6 @@
 
                 const card = document.createElement('div');
 
-                // 編輯模式：顯示可編輯表單
                 if (editingAdminTaskId === task.id) {
                     card.className = "p-3.5 rounded-xl shadow-md border-2 border-indigo-300 bg-indigo-50/40 flex flex-col gap-2.5";
                     const categories = ['例行週報','例行月報','請款','合約/簽核/用印','臨時跨專案雜務'];
@@ -1995,22 +1999,17 @@
             });
             document.getElementById('count-todo').textContent = counts.todo; document.getElementById('count-done').textContent = counts.done;
 
-            // 隱藏已完成開啟時，把已完成欄位內容換成提示文字（資料還在，只是這個瀏覽器選擇不顯示）
-            // 例外：如果正在編輯的卡片剛好在已完成欄位，維持顯示編輯表單，避免編輯到一半畫面消失
             const editingTaskIsDone = editingAdminTaskId && (() => {
                 const t = state.adminTasks.find(t => t.id === editingAdminTaskId);
                 return t && (t.status === 'done');
             })();
             if (hideDone && !editingTaskIsDone) {
                 cols.done.innerHTML = counts.done > 0
-                    ? `<div class="text-center py-10 text-slate-400 text-xs">🙈 已隱藏 ${counts.done} 筆已完成事項<br><span class="text-[10px]">（僅此瀏覽器看不到，資料仍在雲端，其他同仁不受影響）</span></div>`
+                    ? `<div class="text-center py-10 text-slate-400 text-xs">🙈 已隱藏 ${counts.done} 筆已完成事項<br><span class="text-[10px]">（僅此瀏覽器看不到，資料仍在雲端）</span></div>`
                     : `<div class="text-center py-10 text-slate-300 text-xs">目前沒有已完成事項</div>`;
             }
         }
 
-        // 🔥 核心修正：行事曆人員篩選 — 補上 owner 安全檢查，避免缺漏負責人欄位的資料造成整個函式中斷（這就是篩選一點就全空白的真正原因）
-
-        // 新增：產生事件清單（共用邏輯，不分日/週/月都用這份）
         function buildCalendarEvents() {
             let events = [];
             state.campaigns.forEach(c => {
@@ -2053,9 +2052,8 @@
             const bColor = getBrandColor(ev.brand);
             
             if (ev.type === 'launch') {
-                // 上線日：客戶色圓形徽章，顯示「🚀 完整專案名 上線」
                 evBox.className = `event-badge text-[10px] px-1.5 py-1 rounded-full border-2 leading-tight select-none cursor-pointer font-black shadow-sm ${bColor.bg} ${bColor.text} ${bColor.border}`;
-                evBox.innerHTML = escapeHTML(ev.text); // ev.text = "🚀 完整專案名 上線"
+                evBox.innerHTML = escapeHTML(ev.text);
             } else {
                 const isOver = checkIsOverdue(ev.dateStr, ev.completed);
                 let colorClasses, overdueTag = '';
@@ -2063,11 +2061,9 @@
                 if (ev.completed) {
                     colorClasses = 'bg-slate-100 text-slate-400 border-slate-200 line-through opacity-60';
                 } else if (isOver) {
-                    // 逾期：保留客戶色 + 閃爍 + 「逾期」紅標
                     colorClasses = `${bColor.bg} ${bColor.text} border-rose-400 border-2 animate-pulse`;
                     overdueTag = `<span class="text-[8px] font-black bg-rose-500 text-white px-1 py-0.5 rounded ml-0.5">逾期</span>`;
                 } else {
-                    // 一般事項（行政也好、Campaign 也好）：統一用客戶色
                     colorClasses = `${bColor.bg} ${bColor.text} ${bColor.border}`;
                 }
                 
@@ -2080,6 +2076,72 @@
             }
             evBox.onclick = (e) => { e.stopPropagation(); openCalendarDetailModal(ev); };
             return evBox;
+        }
+
+        function getWeekStart(d) {
+            const nd = new Date(d); nd.setHours(0,0,0,0); nd.setDate(nd.getDate() - nd.getDay()); return nd;
+        }
+
+        function getISOWeekNumber(d) {
+            const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+            const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+            return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+        }
+
+        function renderCalendarDayView(container, titleEl, events) {
+            container.className = "block";
+            const dateObj = calendarCurrentDate;
+            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            titleEl.textContent = `${dateObj.getFullYear()} 年 ${dateObj.getMonth()+1} 月 ${dateObj.getDate()} 日（${weekdays[dateObj.getDay()]}）`;
+
+            container.innerHTML = '';
+            const dayEvents = getEventsForDate(events, dateObj);
+            if (dayEvents.length === 0) {
+                container.innerHTML = `<div class="text-center py-16 text-slate-300 bg-slate-50 rounded-xl border border-dashed">這一天沒有任何事項或上線日。</div>`;
+                return;
+            }
+            const list = document.createElement('div');
+            list.className = "space-y-2 max-h-[500px] overflow-y-auto pr-1";
+            dayEvents.forEach(ev => {
+                const badge = buildEventBadge(ev, false);
+                badge.className += " !text-sm !p-3";
+                list.appendChild(badge);
+            });
+            container.appendChild(list);
+        }
+
+        function renderCalendarWeekView(container, titleEl, events) {
+            container.className = "grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200";
+            const weekStart = getWeekStart(calendarCurrentDate);
+            const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+            const fmt = (d) => `${d.getMonth()+1}/${d.getDate()}`;
+            titleEl.textContent = `${weekStart.getFullYear()} 年 第 ${getISOWeekNumber(weekStart)} 週（${fmt(weekStart)} ～ ${fmt(weekEnd)}）`;
+
+            container.innerHTML = '';
+            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            const today = new Date();
+
+            for (let i = 0; i < 7; i++) {
+                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
+                const isToday = dateObj.toDateString() === today.toDateString();
+                const headerCell = document.createElement('div');
+                headerCell.className = `p-2 text-center text-xs font-bold ${isToday ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`;
+                headerCell.innerHTML = `${weekdays[i]}<div class="text-[10px] font-normal">${dateObj.getMonth()+1}/${dateObj.getDate()}</div>`;
+                container.appendChild(headerCell);
+            }
+
+            for (let i = 0; i < 7; i++) {
+                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
+                const dayCell = document.createElement('div'); dayCell.className = "bg-white min-h-[320px] p-1.5 border-t border-slate-100 flex flex-col gap-1 overflow-y-auto";
+                const dayEvents = getEventsForDate(events, dateObj);
+                if (dayEvents.length === 0) {
+                    dayCell.innerHTML = `<span class="text-[10px] text-slate-300 italic text-center mt-4">無事項</span>`;
+                } else {
+                    dayEvents.forEach(ev => dayCell.appendChild(buildEventBadge(ev, false)));
+                }
+                container.appendChild(dayCell);
+            }
         }
 
         function setCalendarViewMode(mode) {
@@ -2169,73 +2231,6 @@
             }
         }
 
-        function getWeekStart(d) {
-            const nd = new Date(d); nd.setHours(0,0,0,0); nd.setDate(nd.getDate() - nd.getDay()); return nd;
-        }
-
-        function renderCalendarWeekView(container, titleEl, events) {
-            container.className = "grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200";
-            const weekStart = getWeekStart(calendarCurrentDate);
-            const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
-            const fmt = (d) => `${d.getMonth()+1}/${d.getDate()}`;
-            titleEl.textContent = `${weekStart.getFullYear()} 年 第 ${getISOWeekNumber(weekStart)} 週（${fmt(weekStart)} ～ ${fmt(weekEnd)}）`;
-
-            container.innerHTML = '';
-            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-            const today = new Date();
-
-            for (let i = 0; i < 7; i++) {
-                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
-                const isToday = dateObj.toDateString() === today.toDateString();
-                const headerCell = document.createElement('div');
-                headerCell.className = `p-2 text-center text-xs font-bold ${isToday ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`;
-                headerCell.innerHTML = `${weekdays[i]}<div class="text-[10px] font-normal">${dateObj.getMonth()+1}/${dateObj.getDate()}</div>`;
-                container.appendChild(headerCell);
-            }
-
-            for (let i = 0; i < 7; i++) {
-                const dateObj = new Date(weekStart); dateObj.setDate(weekStart.getDate() + i);
-                const dayCell = document.createElement('div'); dayCell.className = "bg-white min-h-[320px] p-1.5 border-t border-slate-100 flex flex-col gap-1 overflow-y-auto";
-                const dayEvents = getEventsForDate(events, dateObj);
-                if (dayEvents.length === 0) {
-                    dayCell.innerHTML = `<span class="text-[10px] text-slate-300 italic text-center mt-4">無事項</span>`;
-                } else {
-                    dayEvents.forEach(ev => dayCell.appendChild(buildEventBadge(ev, false)));
-                }
-                container.appendChild(dayCell);
-            }
-        }
-
-        function getISOWeekNumber(d) {
-            const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
-            const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-            return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
-        }
-
-        function renderCalendarDayView(container, titleEl, events) {
-            container.className = "block";
-            const dateObj = calendarCurrentDate;
-            const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-            titleEl.textContent = `${dateObj.getFullYear()} 年 ${dateObj.getMonth()+1} 月 ${dateObj.getDate()} 日（${weekdays[dateObj.getDay()]}）`;
-
-            container.innerHTML = '';
-            const dayEvents = getEventsForDate(events, dateObj);
-            if (dayEvents.length === 0) {
-                container.innerHTML = `<div class="text-center py-16 text-slate-300 bg-slate-50 rounded-xl border border-dashed">這一天沒有任何事項或上線日。</div>`;
-                return;
-            }
-            const list = document.createElement('div');
-            list.className = "space-y-2 max-h-[500px] overflow-y-auto pr-1";
-            dayEvents.forEach(ev => {
-                const badge = buildEventBadge(ev, false);
-                badge.className += " !text-sm !p-3";
-                list.appendChild(badge);
-            });
-            container.appendChild(list);
-        }
-
-
         function getCalendarEventRefKey(ev) {
             if (ev.type === 'camp') return `camp|${ev.campaignId}|${ev.stageId}|${ev.itemId}`;
             if (ev.type === 'admin') return `admin|${ev.taskId}`;
@@ -2299,7 +2294,6 @@
         }
 
         function closeCalendarDetailModal() { document.getElementById('calendar-detail-modal').classList.add('hidden'); }
-        
 
         function renderUI() {
             let overdueCount = 0;
@@ -2307,7 +2301,6 @@
             if (state.adminTasks) state.adminTasks.forEach(t => { if (checkIsOverdue(t.dueDate, t.status==='done')) overdueCount++; });
             
             const overdueEl = document.getElementById('global-overdue-tasks'); if (overdueEl) overdueEl.textContent = overdueCount;
-            // 修正：執行中專案數量計數器（原本從未被更新）
             const campaignCountEl = document.getElementById('global-campaign-count'); if (campaignCountEl) campaignCountEl.textContent = (state.campaigns || []).length;
 
             const active = getActiveCampaign();
@@ -2320,6 +2313,52 @@
                 else if (currentGlobalView === 'usermanagement') renderUserManagement();
             } catch(e) { console.error('renderUI 渲染失敗:', currentGlobalView, e); }
             try { renderKanban(); } catch(e) { console.error('renderKanban 失敗:', e); }
+        }
+
+        function openNoticeModal(mode, noticeId) {
+            const titleInput = document.getElementById('notice-title-input');
+            const contentInput = document.getElementById('notice-content-input');
+            const authorInput = document.getElementById('notice-author-input');
+            const dateInput = document.getElementById('notice-date-input');
+            const modalTitle = document.getElementById('notice-modal-title');
+            const saveBtn = document.getElementById('notice-save-btn');
+
+            if (mode === 'add') {
+                editingNoticeId = null;
+                titleInput.value = ''; contentInput.value = '';
+                authorInput.value = currentUserName || '';
+                dateInput.value = getTodayString();
+                if (modalTitle) modalTitle.textContent = '新增公告';
+                if (saveBtn) saveBtn.textContent = '儲存並張貼';
+            } else if (mode === 'edit') {
+                editingNoticeId = noticeId;
+                const notice = state.notices.find(n => n.id === noticeId);
+                if (notice) {
+                    titleInput.value = notice.title;
+                    contentInput.value = notice.content;
+                    authorInput.value = notice.author;
+                    dateInput.value = notice.date;
+                    if (modalTitle) modalTitle.textContent = '✏️ 編輯公告內容';
+                    if (saveBtn) saveBtn.textContent = '更新並儲存';
+                }
+            }
+            document.getElementById('notice-modal').classList.remove('hidden');
+        }
+
+        function saveNoticeModal() {
+            const t = document.getElementById('notice-title-input').value.trim();
+            const c = document.getElementById('notice-content-input').value.trim();
+            const a = document.getElementById('notice-author-input').value.trim() || '成員';
+            const d = document.getElementById('notice-date-input').value || getTodayString();
+            if(!t || !c) return;
+            if (editingNoticeId) {
+                const notice = state.notices.find(n => n.id === editingNoticeId);
+                if (notice) { notice.title = t; notice.content = c; notice.author = a; notice.date = d; }
+                editingNoticeId = null;
+            } else {
+                state.notices.unshift({ id: 'n_' + Date.now(), title: t, content: c, author: a, date: d });
+            }
+            closeNoticeModal(); saveStateToStorage();
         }
 
         function renderNotices() {
@@ -2351,63 +2390,14 @@
         }
 
         function deleteNotice(id, e) { e.stopPropagation(); triggerCustomAlert('確認刪除公告', '確定要刪除這篇內部公告嗎？', true, () => { state.notices = state.notices.filter(n => n.id !== id); saveStateToStorage(); }); }
-        function openNoticeModal(mode, noticeId) {
-            const titleInput = document.getElementById('notice-title-input');
-            const contentInput = document.getElementById('notice-content-input');
-            const authorInput = document.getElementById('notice-author-input');
-            const dateInput = document.getElementById('notice-date-input');
-            const modalTitle = document.getElementById('notice-modal-title');
-            const saveBtn = document.getElementById('notice-save-btn');
-
-            if (mode === 'add') {
-                editingNoticeId = null;
-                titleInput.value = ''; contentInput.value = '';
-                authorInput.value = currentUserName || '';
-                dateInput.value = getTodayString();
-                if (modalTitle) modalTitle.textContent = '新增公告';
-                if (saveBtn) saveBtn.textContent = '儲存並張貼';
-            } else if (mode === 'edit') {
-                editingNoticeId = noticeId;
-                const notice = state.notices.find(n => n.id === noticeId);
-                if (notice) {
-                    titleInput.value = notice.title;
-                    contentInput.value = notice.content;
-                    authorInput.value = notice.author;
-                    dateInput.value = notice.date;
-                    if (modalTitle) modalTitle.textContent = '✏️ 編輯公告內容';
-                    if (saveBtn) saveBtn.textContent = '更新並儲存';
-                }
-            }
-            document.getElementById('notice-modal').classList.remove('hidden');
-        }
         function closeNoticeModal() { document.getElementById('notice-modal').classList.add('hidden'); }
-        function saveNoticeModal() {
-            const t = document.getElementById('notice-title-input').value.trim();
-            const c = document.getElementById('notice-content-input').value.trim();
-            const a = document.getElementById('notice-author-input').value.trim() || '成員';
-            const d = document.getElementById('notice-date-input').value || getTodayString();
-            if(!t || !c) return;
-            if (editingNoticeId) {
-                const notice = state.notices.find(n => n.id === editingNoticeId);
-                if (notice) { notice.title = t; notice.content = c; notice.author = a; notice.date = d; }
-                editingNoticeId = null;
-            } else {
-                state.notices.unshift({ id: 'n_' + Date.now(), title: t, content: c, author: a, date: d });
-            }
-            closeNoticeModal(); saveStateToStorage();
-        }
 
         function escapeHTML(str) { if (!str) return ''; return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)); }
 
-
-        // ═══════════════════════════════════════════════════
-        // 🎨 主題切換系統
-        // ═══════════════════════════════════════════════════
         const THEMES = ['default', 'rose', 'sage', 'dark'];
         const THEME_LABELS = { default: '預設', rose: '莫蘭迪玫', sage: '莫蘭迪灰', dark: '黑暗' };
 
         function setTheme(name) {
-            // 套用到 <html> 標籤的 data-theme 屬性
             if (name === 'default') {
                 document.documentElement.removeAttribute('data-theme');
             } else {
@@ -2439,7 +2429,7 @@
 
         window.onload = function() {
             loadTheme();
-            renderAuthGateLoading(); // 先顯示驗證中畫面，等 auth.onAuthStateChanged 觸發後才決定顯示登入頁/拒絕頁/主畫面
+            renderAuthGateLoading(); 
             const adminInput = document.getElementById('admin-task-input'); if (adminInput) adminInput.onkeyup = (e) => { if (e.key === 'Enter') addAdminTask(); };
         };
     </script>
