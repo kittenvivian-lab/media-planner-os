@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
@@ -12,32 +12,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     
     <style>
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-        }
-        /* 自訂滾動條 */
-        ::-webkit-scrollbar {
-            width: 11px;
-            height: 11px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 6px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        ::-webkit-scrollbar { width: 11px; height: 11px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* 🎨 主題系統 */
         .theme-dot { transition: transform 0.15s, box-shadow 0.15s; }
-        .theme-dot.active {
-            border-color: white !important;
-            transform: scale(1.35);
-            box-shadow: 0 0 0 3px rgba(255,255,255,0.25);
-        }
+        .theme-dot.active { border-color: white !important; transform: scale(1.35); box-shadow: 0 0 0 3px rgba(255,255,255,0.25); }
 
         /* ── 莫蘭迪玫 Rose ── */
         [data-theme="rose"] header { background: linear-gradient(to right, #7a5c5f, #9c7a7d, #b59093) !important; }
@@ -239,6 +221,7 @@
                 <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-sky-100 border border-sky-300"></span> 工作 / 行政（依客戶色）</span>
                 <span class="flex items-center gap-1"><span class="text-[8px] font-black bg-rose-500 text-white px-1 py-0.5 rounded">逾期</span> 逾期未完成</span>
                 <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-slate-200 border border-slate-300"></span> 已完成</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded border border-dashed border-indigo-300 bg-indigo-50/40"></span> 🔄 未來預排提醒</span>
             </div>
 
             <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
@@ -345,7 +328,7 @@
                         <div>
                             <label class="text-xs font-bold text-slate-500 block mb-1">🔄 循環週期</label>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <select id="admin-task-cycle" onchange="const w=document.getElementById('admin-cycle-day-wrap');const endW=document.getElementById('admin-cycle-end-wrap');if(this.value=='weekly'){w.classList.remove('hidden');endW.classList.remove('hidden');}else{w.classList.add('hidden');endW.classList.add('hidden');}" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-700">
+                                <select id="admin-task-cycle" onchange="const w=document.getElementById('admin-cycle-day-wrap');const endW=document.getElementById('admin-cycle-end-wrap');if(this.value==='weekly'){w.classList.remove('hidden');endW.classList.remove('hidden');}else{w.classList.add('hidden');endW.classList.add('hidden');}" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-700">
                                     <option value="none">不循環</option>
                                     <option value="weekly">每週</option>
                                 </select>
@@ -364,11 +347,11 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="admin-cycle-end-wrap" class="hidden space-y-1">
+                        <div id="admin-cycle-end-wrap" class="hidden space-y-1 mt-2">
                             <label class="text-xs font-bold text-slate-500 block">🛑 循環結束日期（選填）</label>
                             <input type="date" id="admin-task-cycle-end" class="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-white text-slate-500 w-full">
                         </div>
-                        <button onclick="addAdminTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 rounded-lg transition-all shadow-sm">加入看板</button>
+                        <button onclick="addAdminTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 rounded-lg transition-all shadow-sm mt-3">加入看板</button>
                     </div>
                 </div>
 
@@ -429,7 +412,7 @@
         <div id="view-usermanagement" class="global-view hidden space-y-6">
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <h2 class="text-lg font-bold text-slate-900">👥 成員權限管理</h2>
-                <p class="text-sm text-slate-500 mt-0.5 leading-relaxed">只有列在許可名單裡的 Google 信箱才能登入這個系統。管理員才能看到這個分頁。</p>
+                <p class="text-sm text-slate-500 mt-0.5 leading-relaxed">只有列在許可名單裡的 Google 信箱才能登入這個系統。新增同仁時，這裡設定的姓名就是他登入後系統顯示的姓名。只有管理員才能看到這個分頁。</p>
             </div>
 
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
@@ -473,7 +456,7 @@
     <div id="create-handoff-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto py-8">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-lg my-auto">
             <h3 class="font-bold text-slate-900 text-sm mb-1 flex items-center gap-1.5">🌴 新增休假代辦交接</h3>
-            <p class="text-xs text-slate-500 mb-4 leading-relaxed">設定休假區間後，系統會自動列出該期間內的未完成事項。</p>
+            <p class="text-xs text-slate-500 mb-4 leading-relaxed">設定休假區間後，系統會自動列出該同仁「預計完成日落在這段期間內」的未完成事項，勾選需要交接的項目即可，不會動到區間外的其他工作。</p>
             <div class="space-y-4">
                 <div>
                     <label class="text-sm font-bold text-slate-500 block mb-1">👤 請假同仁</label>
@@ -491,11 +474,11 @@
                 </div>
                 <div>
                     <label class="text-sm font-bold text-slate-500 block mb-1">🙋 代理同仁</label>
-                    <select id="handoff-to-select" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"></select>
+                    <select id="handoff-to-select" onchange="const c=document.getElementById('handoff-to-custom-input'); if(this.value==='__custom__'){c.classList.remove('hidden');c.focus();}else{c.classList.add('hidden');}" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"></select>
                     <input type="text" id="handoff-to-custom-input" placeholder="輸入代理人姓名" class="hidden w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mt-2">
                 </div>
                 <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">📦 期間內未完成事項</label>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">📦 期間內未完成事項（可取消勾選不需交接的項目）</label>
                     <div id="handoff-items-preview" class="space-y-1.5 max-h-[240px] overflow-y-auto border border-slate-100 rounded-xl p-2.5 bg-slate-50"></div>
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
@@ -511,14 +494,14 @@
             <h3 class="font-bold text-slate-900 text-sm mb-4" id="modal-title">管理行銷專案 Campaign</h3>
             <div class="space-y-4">
                 <div>
-                    <label class="text-sm font-bold text-slate-500 block mb-1">專案名稱</label>
+                    <label class="text-sm font-bold text-slate-500 block mb-1">專案名稱 (規格建議：客戶品牌_月份_活動描述)</label>
                     <input type="text" id="campaign-name-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
                 </div>
                 <div>
                     <label class="text-sm font-bold text-slate-500 block mb-1">Campaign上線日期</label>
                     <div class="flex items-center gap-3 mb-2">
                         <label class="flex items-center gap-2 text-sm font-bold cursor-pointer text-emerald-600">
-                            <input type="checkbox" id="campaign-alwayson-input" onchange="document.getElementById('campaign-launch-input').disabled=this.checked; if(this.checked) document.getElementById('campaign-launch-input').value='';" class="w-4 h-4 rounded"> 🟢 Always On（常態執行）
+                            <input type="checkbox" id="campaign-alwayson-input" onchange="document.getElementById('campaign-launch-input').disabled=this.checked; if(this.checked) document.getElementById('campaign-launch-input').value='';" class="w-4 h-4 rounded text-emerald-600"> 🟢 Always On（常態執行，無特定上線日）
                         </label>
                     </div>
                     <input type="date" id="campaign-launch-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700">
@@ -767,6 +750,63 @@
         }
         function closeCustomAlert() { document.getElementById('toast-modal').classList.add('hidden'); }
 
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkKNE2y1bjlCj94fWEAVUWcWLJ6bkBgM8",
+            authDomain: "media-planner-os.firebaseapp.com",
+            projectId: "media-planner-os",
+            storageBucket: "media-planner-os.firebasestorage.app",
+            messagingSenderId: "745129351261",
+            appId: "1:745129351261:web:aee454480e82845e0d15b4"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        const SUPER_ADMIN_EMAIL = 'kittenvivian@gmail.com'; 
+        let currentUserEmail = null;
+        let currentUserName = null;
+        let currentUserIsAdmin = false;
+        let allowedUsersMap = {}; 
+        let allowedUsersListenerStarted = false;
+
+        function renderAuthGateLoading() {
+            document.getElementById('auth-gate-card').innerHTML = `
+                <div class="py-6">
+                    <div class="text-4xl mb-3">⏳</div>
+                    <p class="text-slate-500 text-sm">連線驗證中...</p>
+                </div>`;
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('app-root').classList.add('hidden');
+        }
+
+        function renderAuthGateLogin() {
+            document.getElementById('auth-gate-card').innerHTML = `
+                <div class="text-3xl mb-3">📋</div>
+                <h2 class="text-lg font-extrabold text-slate-900 mb-1">團隊進度看板</h2>
+                <p class="text-sm text-slate-500 mb-6">請使用公司許可的 Google 帳號登入</p>
+                <button onclick="handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 font-bold text-sm py-2.5 rounded-xl transition-all">
+                    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.91c1.7-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.27c-.81.54-1.85.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.96 10.71c-.18-.54-.28-1.11-.28-1.71s.1-1.17.28-1.71V4.95H.96A8.996 8.996 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.95l3 2.34C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
+                    使用 Google 帳號登入
+                </button>
+                <p id="auth-gate-error" class="text-xs text-rose-500 mt-3"></p>
+            `;
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('app-root').classList.add('hidden');
+        }
+
+        function renderAuthGateDenied(email) {
+            document.getElementById('auth-gate-card').innerHTML = `
+                <div class="text-4xl mb-3">🚫</div>
+                <h2 class="text-lg font-extrabold text-rose-600 mb-1">你沒有權限</h2>
+                <p class="text-sm text-slate-500 mb-1">請向管理員申請開通存取權限</p>
+                <p class="text-xs text-slate-400 mb-6 bg-slate-50 rounded-lg py-1.5 px-2 inline-block">登入信箱：${escapeHTML(email)}</p>
+                <button onclick="handleLogout()" class="w-full bg-slate-100 text-slate-600 font-bold text-sm py-2.5 rounded-xl">登出，更換帳號</button>
+            `;
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('app-root').classList.add('hidden');
+        }
+
         function handleGoogleLogin() {
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider).catch((err) => {
@@ -1011,10 +1051,16 @@
                 it.status = it.completed ? "已完成" : "進行中";
                 if (it.completed && it.cycleType === 'weekly') {
                     const nextDue = getNextCycleDate(it.dueDate, it.cycleType, it.cycleDay);
-                    if (nextDue) {
+                    let shouldCreateNext = true;
+                    if (it.cycleEnd && nextDue) {
+                        const nextDueObj = parseMMDDToDate(nextDue);
+                        const endObj = new Date(it.cycleEnd); endObj.setHours(23,59,59,999);
+                        if (nextDueObj && nextDueObj > endObj) shouldCreateNext = false;
+                    }
+                    if (nextDue && shouldCreateNext) {
                         stg.items.push({
                             id: 'item_' + Date.now(), text: it.text, status: '未開始', owner: it.owner,
-                            dueDate: nextDue, cycleType: it.cycleType, cycleDay: it.cycleDay, cycleEnd: it.cycleEnd, completed: false
+                            dueDate: nextDue, cycleType: it.cycleType, cycleDay: it.cycleDay, cycleEnd: it.cycleEnd, completed: false, startDate: '', rawDate: ''
                         });
                     }
                 }
@@ -1050,7 +1096,13 @@
                 task.status = nextStatus;
                 if (nextStatus === 'done' && task.cycleType === 'weekly') {
                     const nextDue = getNextCycleDate(task.dueDate, task.cycleType, task.cycleDay);
-                    if (nextDue) {
+                    let shouldCreateNext = true;
+                    if (task.cycleEnd && nextDue) {
+                        const nextDueObj = parseMMDDToDate(nextDue);
+                        const endObj = new Date(task.cycleEnd); endObj.setHours(23,59,59,999);
+                        if (nextDueObj && nextDueObj > endObj) shouldCreateNext = false;
+                    }
+                    if (nextDue && shouldCreateNext) {
                         state.adminTasks.push({
                             id: 'admin_' + Date.now(), text: task.text, category: task.category, client: task.client,
                             owner: task.owner, dueDate: nextDue, status: 'todo', cycleType: task.cycleType, cycleDay: task.cycleDay, cycleEnd: task.cycleEnd
@@ -1080,8 +1132,11 @@
 
         function confirmCreateHandoff() {
             const fromOwner = document.getElementById('handoff-from-select').value;
-            const toOwner = document.getElementById('handoff-to-select').value;
-            if(!state.leaveHandoffs) state.leaveHandoffs = [];
+            // 🔥修復打字錯誤的關鍵點 const_toSelect -> const toSelect
+            const toSelect = document.getElementById('handoff-to-select');
+            const toOwner = toSelect.value === '__custom__' ? document.getElementById('handoff-to-custom-input').value.trim() : toSelect.value;
+            
+            if (!state.leaveHandoffs) state.leaveHandoffs = [];
             state.leaveHandoffs.unshift({
                 id: 'ho_' + Date.now(), fromOwner, toOwner,
                 startDate: document.getElementById('handoff-start-date').value,
@@ -1096,7 +1151,10 @@
         function saveNoticeModal() {
             const t = document.getElementById('notice-title-input').value.trim();
             const c = document.getElementById('notice-content-input').value.trim();
-            if(t && c) state.notices.unshift({ id: 'n_' + Date.now(), title: t, content: c, date: getTodayString(), author: currentUserName });
+            if(t && c) {
+                if(!state.notices) state.notices = [];
+                state.notices.unshift({ id: 'n_' + Date.now(), title: t, content: c, date: getTodayString(), author: currentUserName });
+            }
             closeNoticeModal(); saveStateToStorage(); renderUI();
         }
 
@@ -1108,6 +1166,7 @@
 
         function renderNotices() {
             const grid = document.getElementById('notices-grid'); if(!grid) return;
+            if(!state.notices) state.notices = [];
             grid.innerHTML = state.notices.map(n => `
                 <div class="bg-white p-5 rounded-2xl border border-slate-200">
                     <div class="flex justify-between mb-2">
@@ -1126,8 +1185,44 @@
 
         function getNextCycleDate(dueDateStr, cycleType, cycleDay) {
             const d = parseMMDDToDate(dueDateStr); if (!d) return null;
-            const next = new Date(d); next.setDate(next.getDate() + 7);
+            const next = new Date(d); next.setDate(next.getDate() + 1);
+            if (cycleDay !== undefined && cycleDay !== null && cycleDay !== '') {
+                const target = parseInt(cycleDay); 
+                while (next.getDay() !== target) next.setDate(next.getDate() + 1);
+            } else {
+                next.setDate(next.getDate() + 6);
+            }
             return `${String(next.getMonth()+1).padStart(2,'0')}/${String(next.getDate()).padStart(2,'0')}`;
+        }
+
+        function getFutureDatesForDay(baseMMDD, cycleDay, endLimitStr) {
+            let dates = [];
+            let current = parseMMDDToDate(baseMMDD);
+            if (!current) return dates;
+            
+            let limit = new Date(current);
+            limit.setDate(limit.getDate() + 35); // 預看未來 5 週
+            if (endLimitStr) {
+                let endLimit = new Date(endLimitStr);
+                endLimit.setHours(23,59,59,999);
+                if (endLimit < limit) limit = endLimit;
+            }
+
+            current.setDate(current.getDate() + 1); // 從明天往後推算
+            while (current <= limit) {
+                if (cycleDay !== '' && cycleDay !== undefined && cycleDay !== null) {
+                    if (current.getDay() === parseInt(cycleDay)) {
+                        dates.push(`${current.getMonth()+1}/${current.getDate()}`);
+                    }
+                } else {
+                    const baseDay = parseMMDDToDate(baseMMDD).getDay();
+                    if (current.getDay() === baseDay) {
+                        dates.push(`${current.getMonth()+1}/${current.getDate()}`);
+                    }
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return dates;
         }
 
         function buildCalendarEvents() {
@@ -1139,8 +1234,10 @@
                         events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner || '未指定', dateStr: i.dueDate, completed: i.completed });
                         // 未來循環模擬
                         if(!i.completed && i.cycleType === 'weekly' && i.dueDate) {
-                            let nextDate = getNextCycleDate(i.dueDate, 'weekly', i.cycleDay);
-                            if (nextDate) events.push({ type: 'camp_preview', brand: brand, text: `🔄 [預排提醒] ${i.text}`, owner: i.owner||'未指定', dateStr: nextDate, completed: false });
+                            let futureDates = getFutureDatesForDay(i.dueDate, i.cycleDay, i.cycleEnd);
+                            futureDates.forEach(fd => {
+                                events.push({ type: 'camp_preview', brand: brand, text: `🔄 [預排] ${i.text}`, owner: i.owner||'未指定', dateStr: fd, completed: false });
+                            });
                         }
                     });
                 });
@@ -1148,8 +1245,10 @@
             state.adminTasks.forEach(t => {
                 events.push({ type: 'admin', brand: t.client, text: t.text, owner: t.owner || '未指定', dateStr: t.dueDate, completed: t.status==='done' });
                 if(t.status !== 'done' && t.cycleType === 'weekly' && t.dueDate) {
-                    let nextDate = getNextCycleDate(t.dueDate, 'weekly', t.cycleDay);
-                    if (nextDate) events.push({ type: 'admin_preview', brand: t.client, text: `🔄 [預排提醒] ${t.text}`, owner: t.owner||'未指定', dateStr: nextDate, completed: false });
+                    let futureDates = getFutureDatesForDay(t.dueDate, t.cycleDay, t.cycleEnd);
+                    futureDates.forEach(fd => {
+                        events.push({ type: 'admin_preview', brand: t.client, text: `🔄 [預排] ${t.text}`, owner: t.owner||'未指定', dateStr: fd, completed: false });
+                    });
                 }
             });
             return events;
@@ -1164,15 +1263,23 @@
             container.innerHTML = '';
             
             const events = buildCalendarEvents();
-            for (let day = 1; day <= 30; day++) {
+            const totalDays = new Date(year, month + 1, 0).getDate();
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            
+            for (let i = 0; i < firstDayIndex; i++) {
+                container.innerHTML += `<div class="bg-slate-50 min-h-[110px]"></div>`;
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
                 const dateObj = new Date(year, month, day);
                 const dayEvs = getEventsForDate(events, dateObj);
                 container.innerHTML += `
-                    <div class="bg-white min-h-[110px] p-2 border-t">
+                    <div class="bg-white min-h-[110px] p-2 border-t flex flex-col hover:bg-slate-50">
                         <span class="text-xs font-black text-slate-400">${day}</span>
                         <div class="space-y-1 mt-1">${dayEvs.map(e => {
                             const isP = e.type.includes('_preview');
-                            return `<div class="text-[10px] p-1 rounded ${isP?'border border-dashed border-indigo-300 bg-indigo-50/40 opacity-70':'bg-slate-100'}">${escapeHTML(e.text)}</div>`
+                            const bColor = getBrandColor(e.brand);
+                            return `<div class="text-[10px] p-1 rounded ${isP?'border border-dashed border-indigo-300 bg-indigo-50/40 text-slate-600': bColor.bg + ' ' + bColor.text}">${escapeHTML(e.text)}</div>`
                         }).join('')}</div>
                     </div>`;
             }
@@ -1233,7 +1340,6 @@
                 </div>`).join('');
         }
 
-        // Email 發信專用 API 串接
         async function sendWeeklyEmail(email, overdueList, weeklyList) {
             const webAppUrl = "https://script.google.com/macros/s/AKfycbwCOYu7qUI0eTCPexqBU9r4gv1Pi_nio6eTisXL4yI8ralo3siyXdKm7qRd_tCd19s/exec";
             const messageBody = `<h3>本週工作進度提醒</h3><p><strong>逾期事項：</strong>${overdueList.join(', ')}</p><p><strong>本週待辦：</strong>${weeklyList.join(', ')}</p>`;
@@ -1257,7 +1363,7 @@
 
         function escapeHTML(str) { if (!str) return ''; return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)); }
         function setTheme(name) { document.documentElement.setAttribute('data-theme', name); localStorage.setItem('plannerTheme', name); }
-        window.onload = function() { loadStateFromStorage(); };
+        window.onload = function() { loadTheme(); renderAuthGateLoading(); };
     </script>
 </body>
 </html>
