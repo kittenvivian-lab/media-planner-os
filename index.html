@@ -31,10 +31,7 @@
             background: #94a3b8;
         }
 
-        /* ═══════════════════════════════════════════════════
-           🎨 主題系統  data-theme="bright|vivid|dark"
-           預設主題 (default) 直接用 Tailwind class，不需額外 CSS
-        ═══════════════════════════════════════════════════ */
+        /* 🎨 主題系統 */
         .theme-dot { transition: transform 0.15s, box-shadow 0.15s; }
         .theme-dot.active {
             border-color: white !important;
@@ -42,7 +39,7 @@
             box-shadow: 0 0 0 3px rgba(255,255,255,0.25);
         }
 
-        /* ── 莫蘭迪玫 Rose：霧玫瑰・奶茶米 ── */
+        /* ── 莫蘭迪玫 Rose ── */
         [data-theme="rose"] header { background: linear-gradient(to right, #7a5c5f, #9c7a7d, #b59093) !important; }
         [data-theme="rose"] body { background-color: #f7f3f0 !important; }
         [data-theme="rose"] .bg-indigo-600 { background-color: #9c7a7d !important; }
@@ -68,7 +65,7 @@
         [data-theme="rose"] .text-emerald-700 { color: #647a6f !important; }
         [data-theme="rose"] .bg-emerald-50 { background-color: #eef2f0 !important; }
 
-        /* ── 莫蘭迪灰 Sage：霧鼠尾草・灰青 ── */
+        /* ── 莫蘭迪灰 Sage ── */
         [data-theme="sage"] header { background: linear-gradient(to right, #4e6b5f, #6b8f81, #8aaa9c) !important; }
         [data-theme="sage"] body { background-color: #f0f4f2 !important; }
         [data-theme="sage"] .bg-indigo-600 { background-color: #6b8f81 !important; }
@@ -94,7 +91,7 @@
         [data-theme="sage"] .text-emerald-700 { color: #4e6b5f !important; }
         [data-theme="sage"] .bg-emerald-50 { background-color: #e8f0ed !important; }
 
-        /* ── 黑暗 Dark：深空灰 ── */
+        /* ── 黑暗 Dark ── */
         [data-theme="dark"] body { background-color: #0f172a !important; color: #e2e8f0 !important; }
         [data-theme="dark"] header { background: linear-gradient(to right, #020617, #0f172a, #1e1b4b) !important; }
         [data-theme="dark"] section.sticky { background-color: #1e293b !important; border-color: #334155 !important; }
@@ -584,7 +581,7 @@
     </div>
 
     <script>
-        // 初始狀態定義
+        // 核心狀態
         let state = { campaigns: [], adminTasks: [], notices: [], leaveHandoffs: [], adminArchive: [], campaignArchive: [] };
         let currentOwnerFilter = 'all';
         let currentBrandFilter = 'all'; 
@@ -599,6 +596,10 @@
         let calendarViewMode = 'month'; 
         let currentModalMode = 'add';
         let currentGlobalView = 'dashboard';
+
+        // 🔥 修復關鍵：把漏掉的 Auth 驗證狀態變數補回來！
+        let processedUid = null;
+        let firstUserSeen = false;
 
         const CYCLE_DAY_NAMES = ['週日','週一','週二','週三','週四','週五','週六'];
 
@@ -733,29 +734,10 @@
             return sel.value;
         }
 
-        function isHideCompletedAdminOn() {
-            return localStorage.getItem('hideCompletedAdminTasks') === 'true';
-        }
+        function isHideCompletedAdminOn() { return localStorage.getItem('hideCompletedAdminTasks') === 'true'; }
         function toggleHideCompletedAdmin() {
-            const current = isHideCompletedAdminOn();
-            localStorage.setItem('hideCompletedAdminTasks', current ? 'false' : 'true');
+            localStorage.setItem('hideCompletedAdminTasks', isHideCompletedAdminOn() ? 'false' : 'true');
             renderKanban();
-        }
-
-        function formatDateStringWithDay(dateStr) {
-            if (!dateStr) return '';
-            const weekdays = ['週日','週一','週二','週三','週四','週五','週六'];
-            let y, m, d;
-            if (dateStr.includes('-')) {
-                const parts = dateStr.split('-');
-                y = parseInt(parts[0]); m = parseInt(parts[1]); d = parseInt(parts[2]);
-            } else if (dateStr.includes('/')) {
-                const parts = dateStr.split('/');
-                y = new Date().getFullYear(); m = parseInt(parts[0]); d = parseInt(parts[1]);
-            } else { return dateStr; }
-            const dateObj = new Date(y, m - 1, d);
-            if (isNaN(dateObj.getTime())) return dateStr;
-            return `${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')} (${weekdays[dateObj.getDay()]})`;
         }
 
         function triggerCustomAlert(title, message, showConfirm, onConfirm) {
@@ -785,72 +767,10 @@
         }
         function closeCustomAlert() { document.getElementById('toast-modal').classList.add('hidden'); }
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBkKNE2y1bjlCj94fWEAVUWcWLJ6bkBgM8",
-            authDomain: "media-planner-os.firebaseapp.com",
-            projectId: "media-planner-os",
-            storageBucket: "media-planner-os.firebasestorage.app",
-            messagingSenderId: "745129351261",
-            appId: "1:745129351261:web:aee454480e82845e0d15b4"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-
-        const SUPER_ADMIN_EMAIL = 'kittenvivian@gmail.com'; 
-        let currentUserEmail = null;
-        let currentUserName = null;
-        let currentUserIsAdmin = false;
-        let allowedUsersMap = {}; 
-        let allowedUsersListenerStarted = false;
-
-        function renderAuthGateLoading() {
-            document.getElementById('auth-gate-card').innerHTML = `
-                <div class="py-6">
-                    <div class="text-4xl mb-3">⏳</div>
-                    <p class="text-slate-500 text-sm">連線驗證中...</p>
-                </div>`;
-            document.getElementById('auth-gate').classList.remove('hidden');
-            document.getElementById('app-root').classList.add('hidden');
-        }
-
-        function renderAuthGateLogin() {
-            document.getElementById('auth-gate-card').innerHTML = `
-                <div class="text-3xl mb-3">📋</div>
-                <h2 class="text-lg font-extrabold text-slate-900 mb-1">團隊進度看板</h2>
-                <p class="text-sm text-slate-500 mb-6">請使用公司許可的 Google 帳號登入</p>
-                <button onclick="handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 font-bold text-sm py-2.5 rounded-xl transition-all">
-                    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.91c1.7-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.27c-.81.54-1.85.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.96 10.71c-.18-.54-.28-1.11-.28-1.71s.1-1.17.28-1.71V4.95H.96A8.996 8.996 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.95l3 2.34C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
-                    使用 Google 帳號登入
-                </button>
-                <p id="auth-gate-error" class="text-xs text-rose-500 mt-3"></p>
-            `;
-            document.getElementById('auth-gate').classList.remove('hidden');
-            document.getElementById('app-root').classList.add('hidden');
-        }
-
-        function renderAuthGateDenied(email) {
-            document.getElementById('auth-gate-card').innerHTML = `
-                <div class="text-4xl mb-3">🚫</div>
-                <h2 class="text-lg font-extrabold text-rose-600 mb-1">你沒有權限</h2>
-                <p class="text-sm text-slate-500 mb-1">請向管理員申請開通存取權限</p>
-                <p class="text-xs text-slate-400 mb-6 bg-slate-50 rounded-lg py-1.5 px-2 inline-block">登入信箱：${escapeHTML(email)}</p>
-                <button onclick="handleLogout()" class="w-full bg-slate-100 text-slate-600 font-bold text-sm py-2.5 rounded-xl">登出，更換帳號</button>
-            `;
-            document.getElementById('auth-gate').classList.remove('hidden');
-            document.getElementById('app-root').classList.add('hidden');
-        }
-
         function handleGoogleLogin() {
-            const errEl = document.getElementById('auth-gate-error');
-            if (errEl) errEl.textContent = '';
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider).catch((err) => {
-                console.error('Popup 登入失敗:', err.code);
-                auth.signInWithRedirect(provider).catch((e) => {
-                    if (errEl) errEl.textContent = '登入失敗：' + e.message;
-                });
+                auth.signInWithRedirect(provider);
             });
         }
 
@@ -881,7 +801,7 @@
 
                 startAllowedUsersListener();
                 loadStateFromStorage();
-            }).catch((error) => {
+            }).catch(() => {
                 processedUid = null;
                 renderAuthGateLogin();
             });
@@ -910,15 +830,12 @@
 
         function addAllowedUser() {
             if (!currentUserIsAdmin) return;
-            const emailInput = document.getElementById('new-allowed-email');
-            const nameInput = document.getElementById('new-allowed-name');
-            const isAdminInput = document.getElementById('new-allowed-isadmin');
-            const email = emailInput.value.trim().toLowerCase();
-            const name = nameInput.value.trim();
+            const email = document.getElementById('new-allowed-email').value.trim().toLowerCase();
+            const name = document.getElementById('new-allowed-name').value.trim();
             if (!email || !name) return;
 
-            db.collection('allowedUsers').doc(email).set({ name: name, isAdmin: isAdminInput.checked }).then(() => {
-                emailInput.value = ''; nameInput.value = ''; isAdminInput.checked = false;
+            db.collection('allowedUsers').doc(email).set({ name: name, isAdmin: document.getElementById('new-allowed-isadmin').checked }).then(() => {
+                document.getElementById('new-allowed-email').value = ''; document.getElementById('new-allowed-name').value = ''; document.getElementById('new-allowed-isadmin').checked = false;
             });
         }
 
@@ -1013,7 +930,23 @@
             currentGlobalView = viewName;
             document.querySelectorAll('.global-view').forEach(el => el.classList.add('hidden'));
             document.getElementById('view-' + viewName)?.classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100";
+            });
+            const activeNav = document.getElementById('nav-' + viewName);
+            if (activeNav) activeNav.className = `nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewName === 'adminboard'?'text-emerald-700 bg-emerald-50':viewName==='calendarview'?'text-teal-700 bg-teal-50':viewName==='leavehandoff'?'text-amber-700 bg-amber-50':viewName==='usermanagement'?'text-slate-900 bg-slate-200':'text-indigo-700 bg-indigo-50'}`;
+            
             renderUI();
+        }
+
+        function getActiveCampaign() {
+            return state.campaigns.find(c => c.id === state.activeCampaignId) || state.campaigns[0] || null;
+        }
+
+        function enterCampaignDetail(campId) {
+            state.activeCampaignId = campId;
+            changeGlobalView('campaign-detail');
         }
 
         function openCampaignModal(mode) {
@@ -1148,6 +1081,7 @@
         function confirmCreateHandoff() {
             const fromOwner = document.getElementById('handoff-from-select').value;
             const toOwner = document.getElementById('handoff-to-select').value;
+            if(!state.leaveHandoffs) state.leaveHandoffs = [];
             state.leaveHandoffs.unshift({
                 id: 'ho_' + Date.now(), fromOwner, toOwner,
                 startDate: document.getElementById('handoff-start-date').value,
@@ -1184,6 +1118,12 @@
                 </div>`).join('');
         }
 
+        function parseMMDDToDate(dateStr) {
+            if (!dateStr || !dateStr.includes('/')) return null;
+            const parts = dateStr.split('/');
+            return new Date(new Date().getFullYear(), parseInt(parts[0]) - 1, parseInt(parts[1]));
+        }
+
         function getNextCycleDate(dueDateStr, cycleType, cycleDay) {
             const d = parseMMDDToDate(dueDateStr); if (!d) return null;
             const next = new Date(d); next.setDate(next.getDate() + 7);
@@ -1197,11 +1137,20 @@
                 (c.stages || []).forEach(s => {
                     (s.items || []).forEach(i => {
                         events.push({ type: 'camp', brand: brand, text: i.text, owner: i.owner || '未指定', dateStr: i.dueDate, completed: i.completed });
+                        // 未來循環模擬
+                        if(!i.completed && i.cycleType === 'weekly' && i.dueDate) {
+                            let nextDate = getNextCycleDate(i.dueDate, 'weekly', i.cycleDay);
+                            if (nextDate) events.push({ type: 'camp_preview', brand: brand, text: `🔄 [預排提醒] ${i.text}`, owner: i.owner||'未指定', dateStr: nextDate, completed: false });
+                        }
                     });
                 });
             });
             state.adminTasks.forEach(t => {
                 events.push({ type: 'admin', brand: t.client, text: t.text, owner: t.owner || '未指定', dateStr: t.dueDate, completed: t.status==='done' });
+                if(t.status !== 'done' && t.cycleType === 'weekly' && t.dueDate) {
+                    let nextDate = getNextCycleDate(t.dueDate, 'weekly', t.cycleDay);
+                    if (nextDate) events.push({ type: 'admin_preview', brand: t.client, text: `🔄 [預排提醒] ${t.text}`, owner: t.owner||'未指定', dateStr: nextDate, completed: false });
+                }
             });
             return events;
         }
@@ -1221,7 +1170,10 @@
                 container.innerHTML += `
                     <div class="bg-white min-h-[110px] p-2 border-t">
                         <span class="text-xs font-black text-slate-400">${day}</span>
-                        <div class="space-y-1 mt-1">${dayEvs.map(e => `<div class="text-[10px] bg-slate-100 p-1 rounded">${escapeHTML(e.text)}</div>`).join('')}</div>
+                        <div class="space-y-1 mt-1">${dayEvs.map(e => {
+                            const isP = e.type.includes('_preview');
+                            return `<div class="text-[10px] p-1 rounded ${isP?'border border-dashed border-indigo-300 bg-indigo-50/40 opacity-70':'bg-slate-100'}">${escapeHTML(e.text)}</div>`
+                        }).join('')}</div>
                     </div>`;
             }
         }
@@ -1234,7 +1186,7 @@
         function renderCampaignDashboard() {
             const grid = document.getElementById('campaign-grid'); if(!grid) return;
             grid.innerHTML = state.campaigns.map(camp => `
-                <div class="bg-white rounded-2xl p-5 border cursor-pointer" onclick="enterCampaignDetail('${camp.id}')">
+                <div class="bg-white rounded-2xl p-5 border cursor-pointer hover:border-indigo-300 transition-all flex flex-col justify-between" onclick="enterCampaignDetail('${camp.id}')">
                     <div class="flex justify-between items-start">
                         <h3 class="font-bold text-slate-900">${escapeHTML(camp.name)}</h3>
                         <button onclick="archiveCampaign('${camp.id}', event)" class="text-slate-300 hover:text-amber-500 font-bold text-lg">📦</button>
@@ -1254,6 +1206,10 @@
 
         function renderLeaveHandoffBoard() {
             const list = document.getElementById('leavehandoff-list'); if (!list) return;
+            if(!state.leaveHandoffs || state.leaveHandoffs.length === 0) {
+                list.innerHTML = `<div class="text-center py-8 text-slate-400">目前沒有交接資料</div>`;
+                return;
+            }
             list.innerHTML = state.leaveHandoffs.map(ho => `
                 <div class="bg-white p-4 rounded-xl border border-amber-200">
                     <p class="text-sm font-bold">👤 ${escapeHTML(ho.fromOwner)} ➔ 🙋 ${escapeHTML(ho.toOwner)}</p>
@@ -1261,11 +1217,41 @@
                 </div>`).join('');
         }
 
+        function renderCampaignCampaignDetails(active) {
+            if (!active) return;
+            const grid = document.getElementById('detail-stages-grid'); if(!grid) return;
+            document.getElementById('detail-campaign-title').textContent = active.name;
+            grid.innerHTML = (active.stages || []).map(stg => `
+                <div class="bg-white border p-5 rounded-2xl">
+                    <h4 class="font-extrabold text-slate-800 text-sm mb-3">📁 ${escapeHTML(stg.name)}</h4>
+                    <div class="space-y-1.5 mb-4">${(stg.items || []).map(it => `<div class="text-sm text-slate-600 flex items-center gap-2"><input type="checkbox" ${it.completed?'checked':''} onclick="toggleItemCompletion('${stg.id}','${it.id}')"> ${escapeHTML(it.text)} <span class="text-xs text-slate-400">📅 ${it.dueDate}</span></div>`).join('')}</div>
+                    <div class="flex gap-1">
+                        <input type="text" id="input-${stg.id}" placeholder="新增工作事項..." class="flex-grow text-xs border rounded-lg px-2 py-1">
+                        <input type="date" id="date-${stg.id}" class="text-xs border rounded-lg px-1 py-1 w-28">
+                        <button onclick="addCustomItem('${stg.id}')" class="bg-indigo-600 text-white font-bold text-xs px-2 py-1 rounded-lg">追加</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        // Email 發信專用 API 串接
+        async function sendWeeklyEmail(email, overdueList, weeklyList) {
+            const webAppUrl = "https://script.google.com/macros/s/AKfycbwCOYu7qUI0eTCPexqBU9r4gv1Pi_nio6eTisXL4yI8ralo3siyXdKm7qRd_tCd19s/exec";
+            const messageBody = `<h3>本週工作進度提醒</h3><p><strong>逾期事項：</strong>${overdueList.join(', ')}</p><p><strong>本週待辦：</strong>${weeklyList.join(', ')}</p>`;
+            try {
+                await fetch(webAppUrl, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recipientEmail: email, messageBody: messageBody }) });
+                triggerCustomAlert("成功", "週報郵件已寄出！", false);
+            } catch (e) { console.error(e); }
+        }
+
         function renderUI() {
-            renderCampaignDashboard();
-            renderIntelligenceCalendar();
-            renderNotices();
-            renderLeaveHandoffBoard();
+            archiveOldAdminTasks();
+            const active = getActiveCampaign();
+            if (currentGlobalView === 'dashboard') renderCampaignDashboard();
+            else if (currentGlobalView === 'campaign-detail') renderCampaignCampaignDetails(active);
+            else if (currentGlobalView === 'calendarview') renderIntelligenceCalendar();
+            else if (currentGlobalView === 'toolkit') renderNotices();
+            else if (currentGlobalView === 'leavehandoff') renderLeaveHandoffBoard();
+            else if (currentGlobalView === 'usermanagement') renderUserManagement();
             renderKanban();
         }
 
