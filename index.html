@@ -2616,27 +2616,103 @@
             } else {
                 const isCompleted = ev.completed;
                 const refKey = getCalendarEventRefKey(ev);
-                let campaignFieldHtml = '';
-                if (ev.type === 'camp' && ev.campaignName) {
-                    campaignFieldHtml = `<div><span class="text-xs font-bold text-slate-400 block">📌 所屬行銷專案</span><span class="text-sm font-black text-indigo-700">${escapeHTML(ev.campaignName)}</span></div>`;
-                }
+
+                // 把日期字串轉回 YYYY-MM-DD 供 date input 預填
+                const dueDateRaw = (() => {
+                    if (!ev.dateStr || !ev.dateStr.includes('/')) return '';
+                    const [mm, dd] = ev.dateStr.split('/');
+                    return `${new Date().getFullYear()}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+                })();
+
                 body.innerHTML = `
                     <div class="space-y-3">
-                        <div><span class="text-xs font-bold text-slate-400 block">🏢 客戶品牌別</span><span class="text-sm font-black text-slate-800">${escapeHTML(ev.brand)}</span></div>
-                        ${campaignFieldHtml}
-                        <div><span class="text-xs font-bold text-slate-400 block">✍️ 工作事項完整內容</span><span class="text-sm font-medium text-slate-700 leading-relaxed block bg-slate-50 p-2.5 rounded-xl border border-slate-100">${escapeHTML(ev.text)}</span></div>
-                        <div><span class="text-xs font-bold text-slate-400 block">👤 負責同仁</span><span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">👤 ${escapeHTML(ev.owner)}</span></div>
-                        ${(!isCompleted && refKey) ? `
-                            <div class="pt-2">
-                                <button onclick="triggerFastCompleteEvent('${refKey}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5">
-                                    ✅ 快速劃掉（設為已完成）
-                                </button>
+                        <div class="flex items-center gap-2">
+                            <div class="flex-grow"><span class="text-xs font-bold text-slate-400 block">🏢 客戶品牌</span><span class="text-sm font-black text-slate-800">${escapeHTML(ev.brand)}</span></div>
+                            ${isCompleted ? '<span class="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full shrink-0">✅ 已完成</span>' : '<span class="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-1 rounded-full shrink-0">進行中</span>'}
+                        </div>
+                        ${ev.type === 'camp' && ev.campaignName ? `
+                        <div><span class="text-xs font-bold text-slate-400 block">📌 所屬專案</span>
+                            <span class="text-sm font-black text-indigo-700">${escapeHTML(ev.campaignName)}</span>
+                        </div>` : ''}
+                        <div><span class="text-xs font-bold text-slate-400 block">✍️ 工作事項</span>
+                            <span class="text-sm font-medium text-slate-700 leading-relaxed block bg-slate-50 p-2.5 rounded-xl border border-slate-100">${escapeHTML(ev.text)}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div><span class="text-xs font-bold text-slate-400 block">👤 負責同仁</span>
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">👤 ${escapeHTML(ev.owner)}</span>
                             </div>
-                        ` : ''}
+                            <div class="text-right"><span class="text-xs font-bold text-slate-400 block">📅 完成日</span>
+                                <span class="text-xs font-bold text-slate-600">${ev.dateStr || '未設定'}</span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-3 space-y-2">
+
+                            ${refKey ? `
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 block mb-1">📅 修改完成日</span>
+                                <div class="flex gap-1.5">
+                                    <input type="date" id="cal-edit-date-input"
+                                        value="${dueDateRaw}"
+                                        class="flex-grow text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-600 bg-white">
+                                    <button onclick="updateEventDueDate('${refKey}', document.getElementById('cal-edit-date-input').value)"
+                                        class="shrink-0 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-all">
+                                        確認修改
+                                    </button>
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            ${ev.type === 'camp' && ev.campaignId ? `
+                            <button onclick="jumpToCampaignFromCalendar('${ev.campaignId}')"
+                                class="w-full flex items-center justify-center gap-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 py-2 rounded-xl transition-all">
+                                🔗 前往查看「${escapeHTML(ev.campaignName||'')}」專案
+                            </button>
+                            ` : ''}
+
+                            ${(!isCompleted && refKey) ? `
+                            <button onclick="triggerFastCompleteEvent('${refKey}')"
+                                class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5">
+                                ✅ 快速劃掉（設為已完成）
+                            </button>
+                            ` : ''}
+
+                        </div>
                     </div>
                 `;
             }
             document.getElementById('calendar-detail-modal').classList.remove('hidden');
+        }
+
+
+        // 行事曆燈箱：快速修改完成日
+        function updateEventDueDate(refKey, newDateValue) {
+            if (!newDateValue || !refKey) return;
+            const parts = newDateValue.split('-');
+            const newDisplay = `${parts[1]}/${parts[2]}`;
+            const keys = refKey.split('|');
+
+            if (keys[0] === 'camp') {
+                const camp = state.campaigns.find(c => c.id === keys[1]);
+                const stg = camp && (camp.stages||[]).find(s => s.id === keys[2]);
+                const it = stg && (stg.items||[]).find(i => i.id === keys[3]);
+                if (it) { it.dueDate = newDisplay; it.rawDate = newDateValue; }
+                else { triggerCustomAlert('找不到工作事項', '無法更新，可能已被刪除。', false); return; }
+            } else if (keys[0] === 'admin') {
+                const task = state.adminTasks.find(t => t.id === keys[1]);
+                if (task) { task.dueDate = newDisplay; task.rawDate = newDateValue; }
+                else { triggerCustomAlert('找不到行政事項', '無法更新，可能已被刪除。', false); return; }
+            }
+            saveStateToStorage();
+            closeCalendarDetailModal();
+            renderUI();
+            triggerCustomAlert('完成日已更新', `已修改為 ${newDisplay}`, false);
+        }
+
+        // 行事曆燈箱：快速前往該專案
+        function jumpToCampaignFromCalendar(campId) {
+            closeCalendarDetailModal();
+            enterCampaignDetail(campId);
         }
 
         function closeCalendarDetailModal() { document.getElementById('calendar-detail-modal').classList.add('hidden'); }
