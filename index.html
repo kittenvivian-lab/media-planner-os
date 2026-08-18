@@ -1179,7 +1179,16 @@
             renderUI();
         }
 
+        // 安全開關：只有在確定「成功從雲端讀到過一次真實資料」之後，才允許寫入雲端。
+        // 這樣可以避免任何意外情況（讀取失敗、文件不存在、初始化順序問題等）
+        // 讓程式拿著空的/不完整的 state 把雲端的正式資料覆蓋掉。
+        let cloudStateReady = false;
+
         function saveStateToStorage() {
+            if (!cloudStateReady) {
+                console.warn("⚠️ 雲端資料尚未確認載入成功，已暫停這次寫入，避免覆蓋雲端資料。");
+                return;
+            }
             localStorage.setItem('mediaPlannerMultiStateV8_5', JSON.stringify(state));
             db.collection('global').doc('planner_config').set(state).catch(e => console.error("雲端失敗:", e));
         }
@@ -1196,13 +1205,25 @@
                     if (!state.campaignArchive) state.campaignArchive = [];
                     state.notices = (state.notices || []).filter(n => n && n.id && n.title);
                     state.campaigns.forEach(c => { if (!c.stages) c.stages = []; });
+                    cloudStateReady = true;
+                    renderUI();
                 } else {
-                    state = { campaigns: [], adminTasks: [], notices: [], leaveHandoffs: [] };
-                    saveStateToStorage();
+                    // 雲端找不到這份文件時，「絕對不要」自動建立空文件覆蓋掉任何可能存在的資料。
+                    // 只顯示警告，停止渲染跟寫入，等待人工確認。
+                    console.error("⚠️ 找不到雲端 planner_config 文件，已停止自動寫入空資料，避免造成資料遺失。");
+                    triggerCustomAlert(
+                        '⚠️ 找不到雲端專案資料',
+                        '系統在雲端資料庫中找不到專案資料文件。為了避免誤把空白資料寫回雲端覆蓋掉正式資料，系統已經停止自動存檔功能。請不要繼續新增或編輯任何內容，並盡快聯絡管理員檢查 Firestore 狀態，或確認瀏覽器本機是否留有備份（localStorage 的 mediaPlannerMultiStateV8_5）。',
+                        false
+                    );
                 }
-                renderUI(); 
             }, (error) => {
                 console.error("讀取雲端資料失敗:", error);
+                triggerCustomAlert(
+                    '⚠️ 讀取雲端資料失敗',
+                    '無法連線到雲端資料庫，可能是網路不穩或 Firestore 權限規則的問題。為了資料安全，請先不要繼續編輯，避免造成本機與雲端資料不同步。錯誤訊息：' + (error && error.message ? error.message : error),
+                    false
+                );
             });
         }
 
